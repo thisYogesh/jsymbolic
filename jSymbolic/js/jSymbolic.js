@@ -1,5 +1,6 @@
 //
 (function (doc, win) {
+    var symbolRx = /(\.)([& @ \?])/;
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
@@ -24,7 +25,7 @@
             return this.directR ? this.mainVal : this;
         },
         sym_to_fn: function () {
-            var syClassify = this.symbols.split('$');
+            var syClassify = this.symbols.split(symbolRx);
             for (i = 0; i < syClassify.length; i++) {
                 var prm,
                     symfun = syClassify[i].split('::'), // symfun[0] is symbol and symfun[1] is parameter related to symbol-function
@@ -71,11 +72,20 @@
                 this._alice();
             }
         },
-        Track: function () {
-            this.subCtx ? this.strFun.push('\"subCtx\":\" \"') : null;
-            var a = '{' + this.strFun.join(',') + '}';
-            this.reachReturn = JSON.parse(a);
-            if (this.reachReturn.subCtx) { this.reachReturn.subCtx = this.subCtx };
+		symbolRx : function(){
+			return Rx;
+		},
+        obExt: function (def,udef) {
+            if (typeof udef != "undefined") {
+                var dkey = new JSONs().getKeys(def);
+                for (var p=0;p<dkey.length;p++) {
+                    if (typeof udef[dkey[p]] != "undefined") {
+                        def[dkey[p]] = udef[dkey[p]];
+                    }
+                }
+                return def;
+            }
+            else return def;
         },
         Log: function () { },
         retFun: function (symbol) {
@@ -240,35 +250,38 @@
             this.IFC = !this.IFC;
             return el;
         },
-        symToLogicMaping: {
-            '^>$': { fun: 'nxt', symPara: 'MONO', symType: 'ctx' },                         // next
-            '^<$': { fun: 'prev', symPara: 'MONO', symType: 'ctx' },                        // previous
-            '^\\^$': { fun: 'parent', symPara: 'MONO', symType: 'ctx' },                    // parent
-            '^>\\|$': { fun: 'after', symPara: 'MULTI', symType: 'opt' },                   // after
-            '^\\|<$': { fun: 'before', symPara: 'MULTI', symType: 'opt' },                  // before
-            '^\\?$': { fun: 'find', symPara: 'MULTI', symType: 'ctx' },                     // find
-            '^!$': { fun: 'indx', symPara: 'MULTI', symType: 'ctx' },                       // find within collection by index
-            '^~$': { fun: 'sbls', symPara: 'MONO', symType: 'ctx' },                        // siblings
-            '^<>$': { fun: 'childs', symPara: 'exe', symType: 'ctx' },                      // childrens
-            '^>\\+$': { fun: 'append', symPara: 'MULTI', symType: 'opt' },                  // append
-            '^\\+<$': { fun: 'prepend', symPara: 'MULTI', symType: 'opt' },                 // prepend
-            '^\\|$': { fun: 'height', symPara: 'MONO' },                                    // height
-            '^_$': { fun: 'width', symPara: 'MONO', },                                      // width
-            '^x$': { fun: 'remove', symPara: 'exe', symType: 'opt' },                       // remove
-            '^\\|\\|$': { fun: 'clone', symPara: 'ctx', symType: 'opt' },                   // clone
-            '^\\$$': { fun: 'reduceCtx', symPara: 'exe', symType: 'rctx' },                 // poping the context from mainCtx
-            '^@$': { fun: 'attr', symPara: 'MULTI', symFor: '+', symType: 'opt' },          // attribute
-            '^@x$': { fun: 'attr', symPara: 'MULTI', symFor: 'x', symType: 'opt' },         // remove attribute
-            '^&$': { fun: 'css', symPara: 'MULTI', symType: 'opt' },                        // CSS
-            '^&\\+$': { fun: '_class', symPara: 'MULTI', symFor: '+', symType: 'opt' },     // add CSS class
-            '^&x$': { fun: '_class', symPara: 'MULTI', symFor: 'x', symType: 'opt' },       // remove CSS class
-            '^>\\d+$': { fun: 'fst_by_indx', symPara: 'MONO-MULTI', symType: 'opt' },       // finding elements from 1 to end using index
-            '^<\\d+$': { fun: 'lst_by_indx', symPara: 'MONO-MULTI', symType: 'opt' },       // finding elements from last to first elements using index
+        addSymbols: function (s) {
+            sy.fun.symToLogicMaping = { length: 0 };
+            for (var ef in s) {
+                Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
+            }
+            sy.fun.Map = "";
         }
     });
 
     /* symbol function which used by symbol character end */
-
+    sy.fun.addSymbols({
+        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'ctx' },                              // next
+        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'ctx' },                            // previous
+        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'ctx' },                        // parent
+        after: { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                        // after
+        before: { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                      // before
+        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'ctx' },                           // find
+        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'ctx' },                           // find within collection by index
+        sbls: { fun: 'sbls', symbol: '~', symPara: 'MONO', symType: 'ctx' },                            // siblings
+        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'ctx' },                        // childrens
+        append: { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                      // append
+        prepend: { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                    // prepend
+        height: { fun: 'height', symbol: '|', symPara: 'MONO' },                                        // height
+        width: { fun: 'width', symbol: '_', symPara: 'MONO', },                                         // width
+        remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
+        clone: { fun: 'clone', symbol: '||', symPara: 'ctx', symType: 'opt' },                          // clone
+        reduceCtx: { fun: 'reduceCtx', symbol: '$', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
+        attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
+        css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
+        fst_by_indx: { fun: 'fst_by_indx', symbol: 'Rx{>\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
+        lst_by_indx: { fun: 'lst_by_indx', symbol: 'Rx{<\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
+    });
     /* jSymbolic event binding */
     sy.ext({
         load: function (e, fun) {
@@ -335,30 +348,10 @@
                 if (!this.alice[this.fn.alice]) this.alice[this.fn.alice] = this.subCtx[this.subCtx.length - 1];
             }
         },
-        deepTrim: function (str) {
-
-        }
+        deepTrim: function (str) {}
     });
 
     sy.selectorBuilder = function (ctx, s) {
-        /*var id_class = new RegExp('([#|.]?)([a-z A-Z 0-9]+[\\d+]?)');
-        var el;
-        var selArr = s.match(id_class);
-        if (selArr[1].toString() == '#') {
-            el = document.getElementById(selArr[2].toString());
-        }
-        else if (selArr[1].toString() == '.') {
-            el = ctx.getElementsByClassName(selArr[2].toString());
-        }
-        else if (selArr[1].toString() == '') {
-            el = ctx.getElementsByTagName(selArr[0].toString());
-        }
-        //this.fun.len(el.length >= 0 ? el.length : el ? 1 : 0);
-        this.fun.len(el.length ? el.length : el ? 1 : 0);
-        if (el instanceof HTMLCollection && el.length == 1) {
-            el = el[0];
-        }
-        return el;*/
         var el = Sizzle(s, ctx);
         return el.length == 1 ? el[0] : el;/**/
     }
@@ -378,6 +371,33 @@
     return js = window.sy = sy;  // return main [ sy ] object
 })(document, window);
 
+var JSONs = function (obj) {
+    if (typeof this != "object") return;
+    this[0] = obj;
+    return this;
+}
+JSONs.prototype.get = function (obj) {
+    var O=[], keys = this.getKeys(obj);
+    for (var i in this[0]) {
+        if (this[0][i][keys[0]] == obj[keys[0]]) {
+            O.push(this[0][i]);
+        }
+    }
+    return O;
+}
+JSONs.prototype.getValOf = function (key) {
+    var v = [];
+    for (var i in this[0]) {
+        if (typeof this[0][i][key] != 'undefined') v.push(this[0][i][key]);
+    }
+    return v;
+}
+JSONs.prototype.getKeys = function (obj) {
+    var k=[];
+    for (var i in obj) { k.push(i) }
+    return k;
+}
+
 String.ext = function (fun) {
     for (var fn in fun) {
         String.prototype[fn] = fun[fn];
@@ -391,14 +411,22 @@ Array.ext = function (fun) {
 }
 
 Array.ext({
-    removeDuplicate: function () {
-        var indx = 0, dup = true;
+    removeDuplicate: function (op) {
+        var op = js.fun.obExt({
+            targetChar: '',
+            removeOp: 'normal' // normal | all
+        }, op);
+        
+        var indx = 0, chr, dup = true;
         while (dup) {
             var chk = this.indexOf(this[indx], this.indexOf(this[indx]) + 1);
             var is_dup = { _: chk == -1 ? false : true, ind: chk };
-            if (is_dup._) this.splice(is_dup.ind, 1);
+            if (is_dup._ && (op.targetChar == this[is_dup.ind] || op.targetChar == "" )) this.splice(is_dup.ind, 1);
             else indx++;
-            if (indx == this.length) dup = false;
+            if (indx == this.length) {
+                dup = false;
+                if (op.removeOp == "all") this.splice(this.indexOf(op.targetChar), 1);
+            }
         }
         return this;
     },
@@ -408,6 +436,11 @@ Array.ext({
     },
     first: function () {
         return this[0];
+    },
+    remove: function () {
+        for (var x = 0; x < this.length; x++) {
+
+        }
     }
 });
 
@@ -418,6 +451,25 @@ String.ext({
         return this.str = this.str.join("");
     },
 });
+
+/*var id_class = new RegExp('([#|.]?)([a-z A-Z 0-9]+[\\d+]?)');
+var el;
+var selArr = s.match(id_class);
+if (selArr[1].toString() == '#') {
+    el = document.getElementById(selArr[2].toString());
+}
+else if (selArr[1].toString() == '.') {
+    el = ctx.getElementsByClassName(selArr[2].toString());
+}
+else if (selArr[1].toString() == '') {
+    el = ctx.getElementsByTagName(selArr[0].toString());
+}
+//this.fun.len(el.length >= 0 ? el.length : el ? 1 : 0);
+this.fun.len(el.length ? el.length : el ? 1 : 0);
+if (el instanceof HTMLCollection && el.length == 1) {
+    el = el[0];
+}
+return el;*/
 
 // sizzle selector
 /*! Sizzle v2.2.0-pre | (c) jQuery Foundation, Inc. | jquery.org/license */
