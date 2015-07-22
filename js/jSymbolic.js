@@ -1,6 +1,6 @@
 //
 (function (doc, win) {
-    var symbolRx = /(\.)([& @ \?])/;
+    var symbolRx = /(\.)(&\+|&|@\+|@|>\|>\+|><?|>?<|\?)/;
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
@@ -14,7 +14,7 @@
                 this.mainCtx = sel.nodeType != 9 && sel.nodeType != 1 ? sy.selectorBuilder(doc, sel) : sel;
                 this.subCtx = [];
             } else {
-                var args = arguments;
+                var args = arguments;//
                 this.symbols = args[0];
                 this.op = args[1];
             }
@@ -251,11 +251,15 @@
             return el;
         },
         addSymbols: function (s) {
-            sy.fun.symToLogicMaping = { length: 0 };
+            sy.fun.symToLogicMaping = {};
+            /*sy.fun.symToLogicMaping = { length: 0 };
             for (var ef in s) {
                 Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
             }
-            sy.fun.Map = "";
+            sy.fun.Map = "";*/
+            for (var ef in s) {
+                sy.fun.symToLogicMaping[ef] = s[ef];
+            }
         }
     });
 
@@ -268,7 +272,7 @@
         before: { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                      // before
         find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'ctx' },                           // find
         indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'ctx' },                           // find within collection by index
-        sbls: { fun: 'sbls', symbol: '~', symPara: 'MONO', symType: 'ctx' },                            // siblings
+        sbls: { fun: 'sbls', symbol: '><', symPara: 'MONO', symType: 'ctx' },                            // siblings
         childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'ctx' },                        // childrens
         append: { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                      // append
         prepend: { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                    // prepend
