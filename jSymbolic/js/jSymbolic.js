@@ -1,11 +1,12 @@
 //
 (function (doc, win) {
-    var symbolRx = /(\.)(&\+|&|@\+|@|>\|>\+|><?|>?<|\?)/;
+    var symbolRx = /(\.)?(&\+|&|@\+|@|>\|>\+|><?|>?<|\?|\^|\$)/;
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
     sy.fun = sy.prototype = {
-        _js: function (sel, symbols, op) { // the paramater op : it is used for callback function and symbols : it is used for the assign symbols
+        _js: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
+			var args = arguments;//
             this.directR = false;
             if (!this.mainCtx) { // fallback for next _js initialization
                 sel ? this.mainSelector = sel : sel;
@@ -14,7 +15,6 @@
                 this.mainCtx = sel.nodeType != 9 && sel.nodeType != 1 ? sy.selectorBuilder(doc, sel) : sel;
                 this.subCtx = [];
             } else {
-                var args = arguments;//
                 this.symbols = args[0];
                 this.op = args[1];
             }
@@ -26,60 +26,50 @@
         },
         sym_to_fn: function () {
             var syClassify = this.symbols.split(symbolRx);
-            for (i = 0; i < syClassify.length; i++) {
-                var prm,
-                    symfun = syClassify[i].split('::'), // symfun[0] is symbol and symfun[1] is parameter related to symbol-function
-                    fn = this.fn = this.retFun(symfun[0]);
-                if (fn.fun != 'alice') {  // checking context is access from aliceing
-                    prm = this.subCtx.length == 0 ? this.mainCtx : this.subCtx[this.subCtx.length - 1];
-                } else {
-                    prm = fn.aliceEle; i++;
-                    symfun = syClassify[i].split('::');
-                    fn = this.fn = this.retFun(symfun[0]);
-                }
-                if (prm.nodeType) {
-                    var sel = symfun[1];
-                    this[fn.fun](prm, sel, this.op ? this.op : {});
-                }
-                else if (prm instanceof HTMLCollection || prm[0].nodeType) { // pointer will come here if HTMLCollection/Node Collection is found
-                    if (fn.fun.indexOf(':') == -1) {
-                        //if (fn.symPara == 'MULTI') { var sel = symfun[1]; }
-                        var sel = symfun[1]; // function parameter
-                        if (fn.symType == 'ctx') {
-                            var eles = [];
-                            for (var x = 0; x < prm.length; x++) {
-                                var e = this.IFC_(fn.fun, prm[x], sel, this.op ? this.op : {});
-                                if (e.nodeType) eles.push(e);
-                                else if (e.length > 0) {
-                                    for (var y = 0; y < e.length; y++) {
-                                        if (eles.indexOf(e[y]) == -1) eles.push(e[y]);
-                                    }
-                                }
-                            }
-                            if (fn.fun == 'parent') eles.removeDuplicate();
-                            if (eles.length > 0) this.subCtx.push(eles);
-                        } else if (fn.symType == 'rctx') {
-                            this[fn.fun]();
-                        } else if (fn.symType == 'opt') {
-                            for (var x = 0; x < prm.length; x++) {
-                                this[fn.fun](prm[x], sel, this.op ? this.op : {});
-                            }
-                        }
-                    } else {
-                        this[fn.fun.split(':')[0]](prm, Number(fn.fun.split(':')[1]));
-                    }
-                }
-                this._alice();
-            }
+			var fg = syClassify.clean().split('.');
+			for(var a=0; a<fg.length; a++){
+				var set = fg[a]; // getting set
+				var ele = this.subCtx.length == 0 ? this.mainCtx : this.subCtx.last();
+				this.fn = this.retFun(set[0]);
+				if(set.length == 1){ // standalone symbol
+					if(!ele.length){
+						this[this.fn.fun](ele);
+					}else{
+						var el = [];
+						if(this.fn.symType != "rctx"){
+							this.fn.symType == "context" ? this.IFC = true : this.IFC;
+							for( var x = 0; x < ele.length; x++ ){
+								this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
+							}
+							this.IFC = false;
+							if(el.length > 0) this.subCtx.push(el.clean());
+						}else if(this.fn.symType == "rctx"){
+							this[this.fn.fun]();
+						}
+					}
+				}else if(set.length == 2){ // parameterised symbol
+					if(!ele.length){
+						this[this.fn.fun](ele,set[1].replace("[","").replace("]",""));
+					}else{
+						var el = [];
+						this.fn.symType == "context" ? this.IFC = true : this.IFC;
+						for( var x = 0; x < ele.length; x++ ){
+							this.IFC ? el.push(this[this.fn.fun](ele[x],set[1].replace("[","").replace("]",""))) :this[this.fn.fun](ele[x],set[1].replace("[","").replace("]",""))
+						}
+						this.IFC = false;
+						if(el.length > 0) this.subCtx.push(el.clean());
+					}
+				}
+			}
         },
 		symbolRx : function(){
 			return Rx;
 		},
-        obExt: function (def,udef) {
+        obExt: function (def, udef) {
             if (typeof udef != "undefined") {
                 var dkey = new JSONs().getKeys(def);
                 for (var p=0;p<dkey.length;p++) {
-                    if (typeof udef[dkey[p]] != "undefined") {
+                    if (typeof udef[dkey[p]] != "undefined"){
                         def[dkey[p]] = udef[dkey[p]];
                     }
                 }
@@ -93,19 +83,12 @@
             var cAlice = symbol.match(rxAlice);
             var symbol = symbol.split(':');
             if (!cAlice) {
-                var fn, rX;
-                for (var s in this.symToLogicMaping) {
-                    rX = new RegExp(s);
-                    if (symbol[0].match(rX)) {
-                        if (this.symToLogicMaping[s].symPara != 'MONO-MULTI') {
-                            fn = this.symToLogicMaping[s];
-                        } else if (this.symToLogicMaping[s].symPara == 'MONO-MULTI') {
-                            fn = { fun: this.symToLogicMaping[s].fun + ':' + symbol[0].match(/\d+/)[0], symPara: this.symToLogicMaping[s].symPara };
-                        }
-                        symbol.length > 1 ? fn.alice = symbol[1].match(rxAlice)[1] : true;
-                        return fn;
-                    }
-                }
+                var fn, sb = this.symToLogicMaping;
+                for(var s = 0;s < sb.length; s++){
+					if( sb[s].symbol == symbol ){
+						return sb[s];
+					}
+				} 
             } else if (cAlice) {
                 fn = { fun: 'alice', aliceEle: this.alice[cAlice.last()] };
                 return fn;
@@ -244,7 +227,7 @@
             var el = this.strToHtml(elStr)[0];
             if (!this.IFC) this.subCtx.push(el); else return el;
         },
-        IFC_: function (fun, e, sel,op) {
+        IFC_: function (fun, e, sel, op) {
             this.IFC = !this.IFC;
             var el = this[fun](e, sel, op);
             this.IFC = !this.IFC;
@@ -252,34 +235,34 @@
         },
         addSymbols: function (s) {
             sy.fun.symToLogicMaping = {};
-            /*sy.fun.symToLogicMaping = { length: 0 };
+            sy.fun.symToLogicMaping = { length: 0 };
             for (var ef in s) {
                 Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
             }
-            sy.fun.Map = "";*/
-            for (var ef in s) {
+            //sy.fun.Map = "";
+            /*for (var ef in s) {
                 sy.fun.symToLogicMaping[ef] = s[ef];
-            }
+            }*/
         }
     });
 
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
-        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'ctx' },                              // next
-        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'ctx' },                            // previous
-        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'ctx' },                        // parent
+        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                              // next
+        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                            // previous
+        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                        // parent
         after: { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                        // after
         before: { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                      // before
-        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'ctx' },                           // find
-        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'ctx' },                           // find within collection by index
-        sbls: { fun: 'sbls', symbol: '><', symPara: 'MONO', symType: 'ctx' },                            // siblings
-        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'ctx' },                        // childrens
+        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                           // find
+        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'context' },                           // find within collection by index
+        sbls: { fun: 'sbls', symbol: '><', symPara: 'MONO', symType: 'context' },                           // siblings
+        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'context' },                        // childrens
         append: { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                      // append
         prepend: { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                    // prepend
         height: { fun: 'height', symbol: '|', symPara: 'MONO' },                                        // height
         width: { fun: 'width', symbol: '_', symPara: 'MONO', },                                         // width
         remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
-        clone: { fun: 'clone', symbol: '||', symPara: 'ctx', symType: 'opt' },                          // clone
+        clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                          // clone
         reduceCtx: { fun: 'reduceCtx', symbol: '$', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
         attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
@@ -434,18 +417,31 @@ Array.ext({
         }
         return this;
     },
-    Of: function () { },
     last: function () {
         return this[this.length - 1];
     },
     first: function () {
         return this[0];
     },
-    remove: function () {
+    clean : function () {
+		var a=[];
         for (var x = 0; x < this.length; x++) {
-
+			if( this[x] != "" && this[x] != null && this[x] != undefined ){
+				a.push(this[x]);
+			}
         }
-    }
+		return a;
+    },
+	split : function(op){
+		var a = [], i, part;
+		do{
+			i = this.indexOf(op);
+			part = this.splice(0, i != -1 ? i + 1 : this.length);
+			if(part.indexOf(op) > -1)part.pop();
+			a.push(part);
+		}while(i != -1);
+		return a;
+	}
 });
 
 String.ext({
@@ -454,6 +450,16 @@ String.ext({
         for (var x = 0; x < this.length; x++) { this.str.push(this[x]); }
         return this.str = this.str.join("");
     },
+	replaceAll : function(to, by){
+		this.ms();
+		for( var s = 0; s < this.str.length ; s++ ){
+			var str = this.str;
+			var rstr = str.replace(to, by);
+			this.str = rstr;
+			if( str == rstr ) break;
+		}
+		return this.str;
+	}
 });
 
 /*var id_class = new RegExp('([#|.]?)([a-z A-Z 0-9]+[\\d+]?)');
