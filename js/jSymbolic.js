@@ -1,6 +1,6 @@
 //
 (function (doc, win) {
-    var symbolRx = /(\.)?(&\+|&|@\+|@|>\|>\+|><?|>?<|\?|\^|\$)/;
+    var symbolRx = /(\.)?(&\+|&|@\+|@|>\|>\+|><?|>?<|\?|\^|\$|!)/;
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
