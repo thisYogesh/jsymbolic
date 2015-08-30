@@ -139,6 +139,10 @@
             e = sy.selectorBuilder(e, sel);
             if (!this.IFC) e.length > 0 || e.nodeType ? this.subCtx.push(e) : e; else return e;
         },
+		indx: function(el, indx){
+			indx = Number(indx);
+			if (!this.IFC) this.subCtx.push(this.subCtx[indx]); else return this.subCtx[indx];
+		},
         fst_by_indx: function (coll, indx) {
             if (!this.IFC) this.subCtx.push(coll[indx - 1]); else return coll[indx - 1];
         },
