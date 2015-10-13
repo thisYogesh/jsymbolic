@@ -25,7 +25,8 @@
             return this.directR ? this.mainVal : this;
         },
         sym_to_fn: function () {
-            var syClassify = this.symbols.split(symbolRx);
+            var syClassify = this.filterSymbols();
+            //var syClassify = this.symbols.split(symbolRx);
 			var fg = syClassify.clean().split('.');
 			for(var a=0; a<fg.length; a++){
 				var set = fg[a]; // getting set
@@ -49,12 +50,16 @@
 					}
 				}else if(set.length == 2){ // parameterised symbol
 					if(!ele.length){
-						this[this.fn.fun](ele,set[1].replace("[","").replace("]",""));
+						this[this.fn.fun](ele,set[1].replace(/([\[\]])+/g,""));
 					}else{
 						var el = [];
 						this.fn.symType == "context" ? this.IFC = true : this.IFC;
-						for( var x = 0; x < ele.length; x++ ){
-							this.IFC ? el.push(this[this.fn.fun](ele[x],set[1].replace("[","").replace("]",""))) :this[this.fn.fun](ele[x],set[1].replace("[","").replace("]",""))
+						if(this.fn.symType == "index"){
+							this[this.fn.fun](ele,set[1].replace(/([\[\]])+/g,""));
+						}else{
+							for( var x = 0; x < ele.length; x++ ){
+								this.IFC ? el.push(this[this.fn.fun](ele[x],set[1].replace(/([\[\]])+/g,""))) :this[this.fn.fun](ele[x],set[1].replace(/([\[\]])+/g,""));
+							}
 						}
 						this.IFC = false;
 						if(el.length > 0) this.subCtx.push(el.clean());
@@ -62,7 +67,38 @@
 				}
 			}
         },
-		symbolRx : function(){
+        filterSymbols : function(symbolStr){
+            var sData = this.symToLogicMaping;
+            var symbols = new JSONs(sData).getValOf("symbol");
+            var symbolicData = [];
+            var charData = {
+                dot : 0,
+                LSB : "[",  // left square bracket
+                RSB : "]"   // right square bracket
+            };
+            for(var i1=0; i1<symbolStr.length; i1++){
+                var i=i1, sym = "";
+                while(!/[\.\[]/.test(symbolStr[i])){
+                    sym += symbolStr[i];
+                    i++;
+                }
+                for(var i2=0; i2<symbols.length; i2++){
+                    if(sym == symbols[i2]){
+                        symbolicData.push(sData[i2]);
+                        if( /\[/.test(symbolStr[i])){
+                            var len = symbolStr.indexOf(charData.RSB, i) - i;
+                            var param = symbolStr.substr(i + 1, len - 1);
+                            symbolicData[symbolicData.length - 1].param = param;
+                            i+=(len+1);
+                        }
+                        break;
+                    }
+                }
+                i1+=(i-i1);
+            }
+            return symbolicData;
+        },
+        symbolRx : function(){
 			return Rx;
 		},
         obExt: function (def, udef) {
@@ -141,7 +177,7 @@
         },
 		indx: function(el, indx){
 			indx = Number(indx);
-			if (!this.IFC) this.subCtx.push(this.subCtx[indx]); else return this.subCtx[indx];
+			this.subCtx.push(el[indx]);
 		},
         fst_by_indx: function (coll, indx) {
             if (!this.IFC) this.subCtx.push(coll[indx - 1]); else return coll[indx - 1];
@@ -252,26 +288,26 @@
 
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
-        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                              // next
-        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                            // previous
-        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                        // parent
+        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                          // next
+        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                        // previous
+        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                    // parent
         after: { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                        // after
         before: { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                      // before
-        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                           // find
-        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'context' },                           // find within collection by index
-        sbls: { fun: 'sbls', symbol: '><', symPara: 'MONO', symType: 'context' },                           // siblings
-        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'context' },                        // childrens
+        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                       // find
+        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'index' },                         // find within collection by index
+        sbls: { fun: 'sbls', symbol: '><', symPara: 'MONO', symType: 'context' },                       // siblings
+        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'context' },                    // childrens
         append: { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                      // append
         prepend: { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                    // prepend
         height: { fun: 'height', symbol: '|', symPara: 'MONO' },                                        // height
         width: { fun: 'width', symbol: '_', symPara: 'MONO', },                                         // width
         remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
-        clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                          // clone
+        clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                      // clone
         reduceCtx: { fun: 'reduceCtx', symbol: '$', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
         attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
-        fst_by_indx: { fun: 'fst_by_indx', symbol: 'Rx{>\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
-        lst_by_indx: { fun: 'lst_by_indx', symbol: 'Rx{<\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
+        fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
+        lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
     });
     /* jSymbolic event binding */
     sy.ext({
@@ -362,6 +398,10 @@
     return js = window.sy = sy;  // return main [ sy ] object
 })(document, window);
 
+
+Object.prototype.filter = function(){
+    console.log(this.constructor.toString());
+}
 var JSONs = function (obj) {
     if (typeof this != "object") return;
     this[0] = obj;
