@@ -1,6 +1,13 @@
 //
 (function (doc, win) {
     var symbolRx = /(\.)?(&\+|&|@\+|@|>\|>\+|><?|>?<|\?|\^|\$|!)/;
+    var type = {
+        string : 'string',
+        number : 'number',
+        function : 'function',
+        object : 'object',
+        undefined : "undefined"
+    }
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
@@ -12,7 +19,15 @@
                 sel ? this.mainSelector = sel : sel;
                 symbols ? this.symbols = symbols : symbols;
                 op ? this.op = op : op;
-                this.mainCtx = sel.nodeType != 9 && sel.nodeType != 1 ? sy.selectorBuilder(doc, sel) : sel;
+                this.mainCtx = (function(sel){
+                    var val;
+                    if(sel.nodeType != 9 && sel.nodeType != 1 && typeof sel == type.string ){
+                        val = sy.selectorBuilder(doc, sel);
+                    }else{
+                        val = sel;
+                    }
+                    return val;
+                })(sel);
                 this.subCtx = [];
             } else {
                 this.symbols = args[0];
@@ -26,44 +41,45 @@
         },
         sym_to_fn: function () {
             var fn = this.filterSymbols(this.symbols, this.op);
-            //var syClassify = this.symbols.split(symbolRx);
-			//var fg = syClassify.clean().split('.');
-			for(var a=0; a<fn.length; a++){
-				var fun = fn[a]; // getting set
+            for(var a=0; a<fn.length; a++){
+				this.fn = fn[a]; // getting set
 				var ele = this.getEle();
-				//this.fn = this.retFun(set[0]); // i was here :)
-				if(!fun.param){ // standalone symbol
+				if(!this.fn.param){ // standalone symbol
 					if(!ele.length){
-						this[fun.fun](ele);
+						this[this.fn.fun](ele);
 					}else{
 						var el = [];
-						if(fun.symType != "rctx"){
-							fun.symType == "context" ? this.IFC = true : this.IFC;
+						if(this.fn.symType != "rctx"){
+							this.fn.symType == "context" ? this.IFC = true : this.IFC;
 							for( var x = 0; x < ele.length; x++ ){
-								this.IFC ? el.push(this[fun.fun](ele[x])) : this[fun.fun](ele[x]);
+								this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
 							}
 							this.IFC = false;
 							if(el.length > 0) this.subCtx.push(el.clean());
-						}else if(fun.symType == "rctx"){
-							this[fun.fun]();
+						}else if(this.fn.symType == "rctx"){
+							this[this.fn.fun]();
 						}
 					}
-				}else if(fun.param){ // parameterised symbol
-					if(!ele.length){
-						this[fun.fun](ele, fun.param);
-					}else{
-						var el = [];
-						fun.symType == "context" ? this.IFC = true : this.IFC;
-						if(fun.symType == "index"){
-							this[fun.fun](ele, fun.param);
-						}else{
-							for( var x = 0; x < ele.length; x++ ){
-								this.IFC ? el.push(this[fun.fun](ele[x], fun.param)) :this[fun.fun](ele[x],fun.param);
-							}
-						}
-						this.IFC = false;
-						if(el.length > 0) this.subCtx.push(el.clean());
-					}
+				}else if(this.fn.param){ // parameterised symbol
+                    if(this.fn.symType != "function"){
+    					if(!ele.length){
+    						this[this.fn.fun](ele, this.fn.param);
+    					}else{
+    						var el = [];
+    						this.fn.symType == "context" ? this.IFC = true : this.IFC;
+    						if(this.fn.symType == "index"){
+    							this[this.fn.fun](ele, this.fn.param);
+    						}else{
+    							for( var x = 0; x < ele.length; x++ ){
+    								this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param)) :this[this.fn.fun](ele[x],this.fn.param);
+    							}
+    						}
+    						this.IFC = false;
+    						if(el.length > 0) this.subCtx.push(el.clean());
+    					}
+                    }else if(this.fn.symType == "function"){
+                        this[this.fn.fun](ele, this.fn.param);
+                    }
 				}
 			}
         },
@@ -82,7 +98,7 @@
             };
             for(var i1=0; i1<symbolStr.length; i1++){
                 var i=i1, sym = "";
-                while(!/[\.\[]/.test(symbolStr[i])){
+                while(!/[\.\[]/.test(symbolStr[i]) && typeof symbolStr[i] != "undefined"){
                     sym += symbolStr[i];
                     i++;
                 }
@@ -110,7 +126,7 @@
             if (typeof udef != "undefined") {
                 var dkey = new JSONs().getKeys(def);
                 for (var p=0;p<dkey.length;p++) {
-                    if (typeof udef[dkey[p]] != "undefined"){
+                    if (typeof udef[dkey[p]] != type.undefined ){
                         def[dkey[p]] = udef[dkey[p]];
                     }
                 }
@@ -190,23 +206,23 @@
         lst_by_indx: function (coll, indx) {
             if (!this.IFC) this.subCtx.push(coll[coll.length - indx]); else return coll[coll.length - indx];
         },
-        append: function (e, tempVar, obj) {         // building append function
-            var cont = obj[tempVar] ? obj[tempVar] : tempVar;
+        append: function (e, tempVar) {         // building append function
+            var cont = tempVar;
             var newEle = this.strToHtml(cont);
             this.apnd(e, newEle);
         },
-        prepend: function (e, tempVar, obj) {
-            var cont = obj[tempVar] ? obj[tempVar] : tempVar;
+        prepend: function (e, tempVar) {
+            var cont = tempVar;
             var newEle = this.strToHtml(cont);
             e.childNodes[0] ? this.prnd(e.childNodes[0], newEle) : this.apnd(e, newEle);
         },
-        before: function (e, tempVar, obj) {
-            var cont = obj[tempVar] ? obj[tempVar] : tempVar;
+        before: function (e, tempVar) {
+            var cont = tempVar;
             var newEle = this.strToHtml(cont);
             this.prnd(e, newEle);
         },
-        after: function (e, tempVar, obj) {
-            var cont = obj[tempVar] ? obj[tempVar] : tempVar;
+        after: function (e, tempVar) {
+            var cont = tempVar;
             var newEle = this.strToHtml(cont);
             if (e.nextSibling.nodeType) this.prnd(e.nextSibling, newEle);
             else this.apnd(e.parentNode, newEle);
@@ -231,7 +247,7 @@
         attr: function (e, attr, obj) {
             if (this.fn.symFor != 'x') {
                 if (attr.indexOf('=') == -1) attr = obj[attr];
-                attr = typeof attr == 'string' ? this.mkAttrStr_to_JSON(attr) : attr;
+                attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
                 this.setAttr(e, attr);
             } else {
                 if (attr.indexOf(',') == -1 && obj[attr]) attr = obj[attr];
@@ -240,11 +256,10 @@
         },
         css: function (e, attr, obj) {
             if (attr.indexOf(':') == -1) attr = obj[attr];
-            attr = typeof attr == 'string' ? this.mkAttrStr_to_JSON(attr) : attr;
+            attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
             this.setCSS(e, attr);
         },
-        _class: function (e, cprop, obj) {
-            if (cprop.indexOf(' ') == -1 && obj[cprop]) cprop = obj[cprop];
+        _class: function (e, cprop) {
             cprop = cprop.split(' ').removeDuplicate();
             var svc = e.className.split(' ');
             if (this.fn.symFor == '+') { // add class
@@ -280,19 +295,21 @@
         },
         addSymbols: function (s) {
             sy.fun.symToLogicMaping = {};
-            sy.fun.symToLogicMaping = { length: 0 };
+            sy.fun.symToLogicMaping = { length:0 };
             for (var ef in s) {
                 Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
             }
-            //sy.fun.Map = "";
-            /*for (var ef in s) {
-                sy.fun.symToLogicMaping[ef] = s[ef];
-            }*/
+        },
+        $: function(e, fun){
+            for(var i=0; i<e.length; i++){
+                fun(e[i], i, e);
+            }
         }
     });
 
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
+        fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
         html: { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                         // get innerHtml or outerHtml
         nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                          // next
         prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                        // previous
@@ -312,6 +329,10 @@
         reduceCtx: { fun: 'reduceCtx', symbol: '$', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
         attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
+        addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
+        bindEvent: { fun: 'bindEvent', symbol: 'E', symPara: 'MULTI', symType: 'opt' },                 // bind event
+        unbindEvent: { fun: 'unbindEvent', symbol: 'Ex', symPara: 'MULTI', symType: 'opt' },            // unbind event
+        removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
         fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
         lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
     });
@@ -369,7 +390,6 @@
             var aryJSONstr = {};
             for (var at = 0; at < attr.length; at++) {
                 var attrName = attr[at].split(/=|:/)[0], attrVal = attr[at].split(/=|:/)[1];
-                //aryJSONstr += (at == 0 ? '{' : '') + '\"' + attrName + '\": \"' + attrVal + '\"' + (at != attr.length - 1 ? ',' : '}');
                 aryJSONstr[attrName] = attrVal;
             }
             //return JSON.parse(aryJSONstr);
@@ -404,12 +424,8 @@
     return js = window.sy = sy;  // return main [ sy ] object
 })(document, window);
 
-
-Object.prototype.filter = function(){
-    console.log(this.constructor.toString());
-}
 var JSONs = function (obj) {
-    if (typeof this != "object") return;
+    if (typeof this != 'object') return;
     this[0] = obj;
     return this;
 }
