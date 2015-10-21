@@ -93,20 +93,20 @@
             var symbolicData = [];
             var charData = {
                 dot : 0,
-                LSB : "[",
-                RSB : "]"
+                LCB : "{",
+                RCB : "}"
             };
             for(var i1=0; i1<symbolStr.length; i1++){
                 var i=i1, sym = "";
-                while(!/[\.\[]/.test(symbolStr[i]) && typeof symbolStr[i] != "undefined"){
+                while(!/[\.\{]/.test(symbolStr[i]) && typeof symbolStr[i] != type.undefined){
                     sym += symbolStr[i];
                     i++;
                 }
                 for(var i2=0; i2<symbols.length; i2++){
                     if(sym == symbols[i2]){
                         symbolicData.push(sData[i2]);
-                        if( /\[/.test(symbolStr[i])){
-                            var len = symbolStr.indexOf(charData.RSB, i) - i;
+                        if( /\{/.test(symbolStr[i])){
+                            var len = symbolStr.indexOf(charData.RCB, i) - i;
                             var param = symbolStr.substr(i + 1, len - 1);
                             if(op.hasOwnProperty(param))param = op[param];
                             symbolicData[symbolicData.length - 1].param = param;
@@ -123,7 +123,7 @@
 			return Rx;
 		},
         obExt: function (def, udef) {
-            if (typeof udef != "undefined") {
+            if (typeof udef != type.undefined) {
                 var dkey = new JSONs().getKeys(def);
                 for (var p=0;p<dkey.length;p++) {
                     if (typeof udef[dkey[p]] != type.undefined ){
@@ -300,9 +300,12 @@
                 Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
             }
         },
-        $: function(e, fun){
+        $ : function(e, fun){
+            fun.call(e);
+        },
+        $each: function(e, fun){
             for(var i=0; i<e.length; i++){
-                fun(e[i], i, e);
+                fun.call(e[i], i, e);
             }
         }
     });
@@ -310,6 +313,7 @@
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
         fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
+        eachfn : { fun: '$each', symbol: '$*', symType: 'function'},                                    // executable function
         html: { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                         // get innerHtml or outerHtml
         nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                          // next
         prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                        // previous
