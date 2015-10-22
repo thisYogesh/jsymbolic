@@ -1,20 +1,21 @@
 //
 (function (doc, win) {
-    var symbolRx = /(\.)?(&\+|&|@\+|@|>\|>\+|><?|>?<|\?|\^|\$|!)/;
     var type = {
         string : 'string',
         number : 'number',
         function : 'function',
         object : 'object',
-        undefined : "undefined"
+        undefined : "undefined",
+        boolean : "boolean"
     };
+    var bool = {true: true, false: false};
     var sy = function (sel, symbols, op) {
-        return new sy.fun._js(sel, symbols, op);
+        var j = new sy.fun._js(sel, symbols, op);
+        return j.return ? j.return : j;
     };
     sy.fun = sy.prototype = {
         _js: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
 			var args = arguments;//
-            this.directR = false;
             if (!this.mainCtx) { // fallback for next _js initialization
                 sel ? this.mainSelector = sel : sel;
                 symbols ? this.symbols = symbols : symbols;
@@ -37,7 +38,7 @@
             this.IFC = false; // Internal function calling
             this.symbols ? this.sym_to_fn() : this.symbols;
             //this.splice = [].splice;
-            return this.directR ? this.mainVal : this;
+            return this;
         },
         sym_to_fn: function () {
             var fn = this.filterSymbols(this.symbols, this.op);
@@ -119,9 +120,6 @@
             }
             return symbolicData;
         },
-        symbolRx : function(){
-			return Rx;
-		},
         obExt: function (def, udef) {
             if (typeof udef != type.undefined) {
                 var dkey = new JSONs().getKeys(def);
@@ -134,7 +132,6 @@
             }
             else return def;
         },
-        Log: function () { },
         retFun: function (symbol) {
             var rxAlice = /^<([a-z A-Z 0-9]+)>$/; //^([<|>|\?|0-9]+)?:([a-z]+)$/;
             var cAlice = symbol.match(rxAlice);
@@ -255,9 +252,10 @@
             }
         },
         css: function (e, attr, obj) {
-            if (attr.indexOf(':') == -1) attr = obj[attr];
+            if (attr.indexOf(':') == -1 && typeof obj != type.undefined) attr = obj[attr];
             attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
             this.setCSS(e, attr);
+            if(attr.getter)this.getCSS(e, attr.getter);
         },
         _class: function (e, cprop) {
             cprop = cprop.split(' ').removeDuplicate();
@@ -312,6 +310,7 @@
 
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
+        el : { fun: 'el', symbol: 'e', symType: 'opt'},
         fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
         eachfn : { fun: '$each', symbol: '$*', symType: 'function'},                                    // executable function
         html: { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                         // get innerHtml or outerHtml
@@ -386,17 +385,29 @@
         },
         setCSS: function (e, css) {
             for (var style in css) {
-                e.style[style] = css[style];
+                if(style != "getter")
+                    e.style[style] = css[style];
             }
+        },
+        getCSS: function(e, css){
+            for(var prop in css){
+                css[prop] = e.style[prop];
+            }
+            this.setReturn(css);
         },
         mkAttrStr_to_JSON: function (attr) {
             var attr = attr.split(/,|;/);
             var aryJSONstr = {};
             for (var at = 0; at < attr.length; at++) {
-                var attrName = attr[at].split(/=|:/)[0], attrVal = attr[at].split(/=|:/)[1];
+                var attrs = attr[at].split(/=|:/);
+                if(attrs.length == 1){
+                    if(!aryJSONstr.getter)aryJSONstr.getter = {};
+                    aryJSONstr.getter[attrs[0]] = "";
+                    continue;
+                }
+                var attrName = attrs[0],attrVal = attrs[1];
                 aryJSONstr[attrName] = attrVal;
             }
-            //return JSON.parse(aryJSONstr);
             return aryJSONstr;
         },
         _alice: function () {
@@ -405,9 +416,21 @@
                 if (!this.alice[this.fn.alice]) this.alice[this.fn.alice] = this.subCtx[this.subCtx.length - 1];
             }
         },
-        deepTrim: function (str) {}
-    });
+        deepTrim: function(str){},
+        setReturn: function(values){
+            var i = 0,val = [];
+            for(var prop in values){
+                if(i > 1)break;else i++;
+                val.push(values[prop]);
+            }
+            if(i == 1){
+                this.return = val[0];
+            }else if(i > 1){
+                this.return = values;
+            }
+        }
 
+    });
     sy.selectorBuilder = function (ctx, s) {
         var el = Sizzle(s, ctx);
         return el.length == 1 ? el[0] : el;/**/
