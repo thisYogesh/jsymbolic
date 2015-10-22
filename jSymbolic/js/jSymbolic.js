@@ -7,7 +7,7 @@
         function : 'function',
         object : 'object',
         undefined : "undefined"
-    }
+    };
     var sy = function (sel, symbols, op) {
         return new sy.fun._js(sel, symbols, op);
     };
