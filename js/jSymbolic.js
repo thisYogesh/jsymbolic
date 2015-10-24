@@ -5,13 +5,13 @@
         number : 'number',
         function : 'function',
         object : 'object',
-        undefined : "undefined",
-        boolean : "boolean"
+        undefined : 'undefined',
+        boolean : 'boolean'
     };
     var bool = {true: true, false: false};
     var sy = function (sel, symbols, op) {
         var j = new sy.fun._js(sel, symbols, op);
-        return j.return ? j.return : j;
+        return typeof j.return == type.undefined ? j : j.return;
     };
     sy.fun = sy.prototype = {
         _js: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
@@ -31,6 +31,7 @@
                 })(sel);
                 this.subCtx = [];
             } else {
+                this.oldObject = true;
                 this.symbols = args[0];
                 this.op = args[1];
             }
@@ -38,51 +39,51 @@
             this.IFC = false; // Internal function calling
             this.symbols ? this.sym_to_fn() : this.symbols;
             //this.splice = [].splice;
-            return this;
+            return this.oldObject ? this.return ? this.return : this : this;
         },
         sym_to_fn: function () {
             var fn = this.filterSymbols(this.symbols, this.op);
-            for(var a=0; a<fn.length; a++){
-				this.fn = fn[a]; // getting set
-				var ele = this.getEle();
-				if(!this.fn.param){ // standalone symbol
-					if(!ele.length){
-						this[this.fn.fun](ele);
-					}else{
-						var el = [];
-						if(this.fn.symType != "rctx"){
-							this.fn.symType == "context" ? this.IFC = true : this.IFC;
-							for( var x = 0; x < ele.length; x++ ){
-								this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
-							}
-							this.IFC = false;
-							if(el.length > 0) this.subCtx.push(el.clean());
-						}else if(this.fn.symType == "rctx"){
-							this[this.fn.fun]();
-						}
-					}
-				}else if(this.fn.param){ // parameterised symbol
+            this.for(fn, function(a,b,c){
+                this.fn = a; // getting set
+                var ele = this.getEle();
+                if(!this.fn.param){ // standalone symbol
+                    if(!ele.length){
+                        this[this.fn.fun](ele);
+                    }else{
+                        var el = [];
+                        if(this.fn.symType != "rctx"){
+                            this.fn.symType == "context" ? this.IFC = true : this.IFC;
+                            for( var x = 0; x < ele.length; x++ ){
+                                this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
+                            }
+                            this.IFC = false;
+                            if(el.length > 0) this.subCtx.push(el.clean());
+                        }else if(this.fn.symType == "rctx"){
+                            this[this.fn.fun]();
+                        }
+                    }
+                }else if(this.fn.param){ // parameterised symbol
                     if(this.fn.symType != "function"){
-    					if(!ele.length){
-    						this[this.fn.fun](ele, this.fn.param);
-    					}else{
-    						var el = [];
-    						this.fn.symType == "context" ? this.IFC = true : this.IFC;
-    						if(this.fn.symType == "index"){
-    							this[this.fn.fun](ele, this.fn.param);
-    						}else{
-    							for( var x = 0; x < ele.length; x++ ){
-    								this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param)) :this[this.fn.fun](ele[x],this.fn.param);
-    							}
-    						}
-    						this.IFC = false;
-    						if(el.length > 0) this.subCtx.push(el.clean());
-    					}
+                        if(!ele.length){
+                            this[this.fn.fun](ele, this.fn.param);
+                        }else{
+                            var el = [];
+                            this.fn.symType == "context" ? this.IFC = true : this.IFC;
+                            if(this.fn.symType == "index"){
+                                this[this.fn.fun](ele, this.fn.param);
+                            }else{
+                                for( var x = 0; x < ele.length; x++ ){
+                                    this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param)) :this[this.fn.fun](ele[x],this.fn.param);
+                                }
+                            }
+                            this.IFC = false;
+                            if(el.length > 0) this.subCtx.push(el.clean());
+                        }
                     }else if(this.fn.symType == "function"){
                         this[this.fn.fun](ele, this.fn.param);
                     }
-				}
-			}
+                }
+            });
         },
         getEle : function(){
             return this.subCtx.length == 0 ? this.mainCtx : this.subCtx.last();
@@ -105,7 +106,8 @@
                 }
                 for(var i2=0; i2<symbols.length; i2++){
                     if(sym == symbols[i2]){
-                        symbolicData.push(sData[i2]);
+                        var fndata = new JSONs.prototype.clone(sData[i2]);
+                        symbolicData.push(fndata);
                         if( /\{/.test(symbolStr[i])){
                             var len = symbolStr.indexOf(charData.RCB, i) - i;
                             var param = symbolStr.substr(i + 1, len - 1);
@@ -243,9 +245,10 @@
         },
         attr: function (e, attr, obj) {
             if (this.fn.symFor != 'x') {
-                if (attr.indexOf('=') == -1) attr = obj[attr];
+                if (attr.indexOf('=') == -1 && typeof obj != type.undefined) attr = obj[attr];
                 attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
                 this.setAttr(e, attr);
+                if(attr.getter)this.getAttr(e, attr.getter); 
             } else {
                 if (attr.indexOf(',') == -1 && obj[attr]) attr = obj[attr];
                 this.removeAttr(e, attr);
@@ -284,6 +287,9 @@
             var elStr = e.outerHTML;
             var el = this.strToHtml(elStr)[0];
             if (!this.IFC) this.subCtx.push(el); else return el;
+        },
+        ehtml: function(e){
+            // i was here :)
         },
         IFC_: function (fun, e, sel, op) {
             this.IFC = !this.IFC;
@@ -373,10 +379,21 @@
             e.parentNode.insertBefore(newEle[0], e);
             newEle[0] ? newEle[0].nodeType ? this.prnd(e, newEle) : true : true;
         },
-        setAttr: function (e, attrJSON) {
-            for (var at in attrJSON) {
-                e.setAttribute(at, attrJSON[at]);
+        setAttr: function (e, attr) {
+            for (var at in attr) {
+                if(at != "getter")
+                    e.setAttribute(at, attr[at]);
             }
+        },
+        getAttr: function(e, attr){
+            for(var prop in attr){
+                for(var i=0; i<e.attributes.length; i++){
+                    if(e.attributes[i].nodeName == prop){
+                        attr[prop] = e.attributes[i].nodeValue;
+                    }
+                }
+            }
+            this.setReturn(e, attr);
         },
         removeAttr: function (e, attr) {
             for (var at in attr.split(',')) {
@@ -393,7 +410,7 @@
             for(var prop in css){
                 css[prop] = e.style[prop];
             }
-            this.setReturn(css);
+            this.setReturn(e, css);
         },
         mkAttrStr_to_JSON: function (attr) {
             var attr = attr.split(/,|;/);
@@ -416,20 +433,57 @@
                 if (!this.alice[this.fn.alice]) this.alice[this.fn.alice] = this.subCtx[this.subCtx.length - 1];
             }
         },
-        deepTrim: function(str){},
-        setReturn: function(values){
-            var i = 0,val = [];
-            for(var prop in values){
-                if(i > 1)break;else i++;
-                val.push(values[prop]);
+        for : function(collection, fun){
+            if(collection.length){
+                for(var i=0; i<collection.length; i++){
+                    fun.call(this, collection[i], i, collection);
+                }
+            }else{
+                fun.call(this, collection, 0, collection);
             }
-            if(i == 1){
-                this.return = val[0];
-            }else if(i > 1){
-                this.return = values;
+        },
+        deepTrim: function(str){},
+        setReturn: function(e, values){
+            if(arguments.length != 2)throw "setReturn require 2 arguments";
+            var i = 0, val = [], vl = {};
+            !this.returnVal ? this.returnVal = [] : this.returnVal;
+            if(this.returnVal.length == 0){
+                vl.el = e;
+                vl.val = values;
+                this.returnVal.push(vl);
+            }else{
+                var r = new JSONs(this.returnVal).getValOf('el');
+                this.for(e, function(e){
+                    var br = false;
+                    if(r.indexOf(e) > -1){ // check if element is already took for return;
+                        for(var i=0; i<this.returnVal.length; i++){
+                            for(var prop in this.returnVal[i]){
+                                if(prop == 'el' && this.returnVal[i].el == e){
+                                    this.returnVal[i].val = new JSONs(this.returnVal[i].val).join(values); // copy one json into another json
+                                    br = true;
+                                }
+                                if(br)break;
+                            }
+                            if(br)break;
+                        }
+                    }else{ // else init freshly 
+                        vl.el = e;
+                        vl.val = values;
+                        this.returnVal.push(vl);
+                    }
+                });
+            }
+            if(this.returnVal.length == 1){
+                for(var prop in this.returnVal[0].val){
+                    if(i > 1)break;else i++;
+                    val.push(this.returnVal[0].val[prop]);
+                }
+                if(i==1) this.return = val[0];
+                else if(i > 1) this.return = this.returnVal[0].val;
+            }else{
+                this.return = this.returnVal;
             }
         }
-
     });
     sy.selectorBuilder = function (ctx, s) {
         var el = Sizzle(s, ctx);
@@ -465,19 +519,38 @@ JSONs.prototype.get = function (obj) {
     }
     return O;
 }
-JSONs.prototype.getValOf = function (key) {
+JSONs.prototype.getValOf = function(key) {
     var v = [];
     for (var i in this[0]) {
         if (typeof this[0][i][key] != 'undefined') v.push(this[0][i][key]);
     }
     return v;
 }
-JSONs.prototype.getKeys = function (obj) {
+JSONs.prototype.getKeys = function(obj) {
     var k=[];
     for (var i in obj) { k.push(i) }
     return k;
 }
-
+JSONs.prototype.clone = function(obj){
+    var clone = {};
+    if(arguments.length == 1){
+        for(var i in obj){
+            clone[i] = obj[i];
+        }
+    }
+    else{
+        for(var i in this){
+            clone[i] = this[i];
+        }
+    }
+    return clone;
+}
+JSONs.prototype.join = function(obj){
+    for(var i in obj){
+        this[0][i] = obj[i];
+    }
+    return this[0];
+}
 String.ext = function (fun) {
     for (var fn in fun) {
         String.prototype[fn] = fun[fn];
