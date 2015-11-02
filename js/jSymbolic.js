@@ -10,11 +10,11 @@
     };
     var bool = {true: true, false: false};
     var sy = function (sel, symbols, op) {
-        var j = new sy.fun._js(sel, symbols, op);
+        var j = new sy.fun._$S(sel, symbols, op);
         return typeof j.return == type.undefined ? j : j.return;
     };
     sy.fun = sy.prototype = {
-        _js: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
+        _$S: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
 			var args = arguments;//
             if (!this.mainCtx) { // fallback for next _js initialization
                 sel ? this.mainSelector = sel : sel;
@@ -35,7 +35,6 @@
                 this.symbols = args[0];
                 this.op = args[1];
             }
-            this.strFun = {};
             this.IFC = false; // Internal function calling
             this.symbols ? this.sym_to_fn() : this.symbols;
             //this.splice = [].splice;
@@ -44,7 +43,7 @@
         sym_to_fn: function () {
             var fn = this.filterSymbols(this.symbols, this.op);
             this.for(fn, function(a,b,c){
-                this.fn = a; // getting set
+                this.fn = a; // getting function set
                 var ele = this.getEle();
                 if(!this.fn.param){ // standalone symbol
                     if(!ele.length){
@@ -100,7 +99,7 @@
             };
             for(var i1=0; i1<symbolStr.length; i1++){
                 var i=i1, sym = "";
-                while(!/[\.\{]/.test(symbolStr[i]) && typeof symbolStr[i] != type.undefined){
+                while((!/[\.\{]/.test(symbolStr[i]) && typeof symbolStr[i] != type.undefined) || i == i1 ){
                     sym += symbolStr[i];
                     i++;
                 }
@@ -159,22 +158,6 @@
     /* symbol function which used by symbol character end  */
 
     sy.ext({
-        height: function (e) {
-            if (this.strFun.height) {
-                this.strFun.height.push(e.offsetHeight);
-            } else {
-                this.strFun.height = [];
-                this.height(e);
-            }
-        },
-        width: function (e) {
-            if (this.strFun.width) {
-                this.strFun.width.push(e.offsetWidth);
-            } else {
-                this.strFun.width = [];
-                this.width(e);
-            }
-        },
         nxt: function (e) {
             e.nextSibling.nodeType == 3 ? e = e.nextSibling.nextSibling : e = e.nextSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
@@ -230,9 +213,9 @@
             var el = this.IFC_(e.parentNode, 'childs');
             if (el) {
                 var ele = [];
-                for (var E = 0; E < el.length; E++) {
-                    if (el[E] != e) ele.push(el[E]);
-                }
+                this.for(el, function(a,b,c){
+                    if (a != e) ele.push(a);
+                });
             }
             if (!this.IFC) this.subCtx.push(ele); else return ele;
         },
@@ -245,8 +228,7 @@
         },
         attr: function (e, attr, obj) {
             if (this.fn.symFor != 'x') {
-                if (attr.indexOf('=') == -1 && typeof obj != type.undefined) attr = obj[attr];
-                attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
+                attr = this.formateArg(attr, obj);
                 this.setAttr(e, attr);
                 if(attr.getter)this.getAttr(e, attr.getter); 
             } else {
@@ -255,28 +237,34 @@
             }
         },
         css: function (e, attr, obj) {
-            if (attr.indexOf(':') == -1 && typeof obj != type.undefined) attr = obj[attr];
-            attr = typeof attr == type.string ? this.mkAttrStr_to_JSON(attr) : attr;
+            attr = this.formateArg(attr, obj);
             this.setCSS(e, attr);
             if(attr.getter)this.getCSS(e, attr.getter);
+        },
+        formateArg: function(args, obj){// used for to make arguments in to json object
+            if ((args.indexOf('=') == -1 || args.indexOf(':') == -1) && typeof obj != type.undefined){
+                args = obj[args];
+            }
+            args = typeof args == type.string ? this.mkAttrStr_to_JSON(args) : args;
+            return args;
         },
         _class: function (e, cprop) {
             cprop = cprop.split(' ').removeDuplicate();
             var svc = e.className.split(' ');
             if (this.fn.symFor == '+') { // add class
-                for (var x = 0; x < svc.length; x++) {
-                    if (cprop.indexOf(svc[x]) > -1) {
-                        cprop.splice(cprop.indexOf(svc[x]), 1);
+                this.for(svc, function(a,b,c){
+                    if (cprop.indexOf(a) > -1) {
+                        cprop.splice(cprop.indexOf(a), 1);
                     }
-                }
+                });
                 e.className += svc[0] == '' ? cprop[0] : cprop.join(' ').length > 0 ? ' ' + cprop.join(' ') : '';
             }
             else if (this.fn.symFor == 'x') { // remove class
-                for (var x = 0; x < cprop.length; x++) {
-                    if (svc.indexOf(cprop[x]) > -1) {
-                        svc.splice(svc.indexOf(cprop[x]), 1);
+                this.for(cprop, function(a,b,c){
+                    if (svc.indexOf(a) > -1) {
+                        svc.splice(svc.indexOf(a), 1);
                     }
-                }
+                });
                 e.className = svc.join(' ');
             }
         },
@@ -288,8 +276,12 @@
             var el = this.strToHtml(elStr)[0];
             if (!this.IFC) this.subCtx.push(el); else return el;
         },
-        ehtml: function(e){
-            // i was here :)
+        ehtml: function(e, attr, obj){
+            if(typeof attr != type.undefined)
+            if (attr.indexOf(':') == -1 && typeof obj != type.undefined) attr = obj[attr];
+            var html = this.htmlTostr(e, attr);
+            attr = {html : html}
+            this.setReturn(e, attr);
         },
         IFC_: function (fun, e, sel, op) {
             this.IFC = !this.IFC;
@@ -298,19 +290,27 @@
             return el;
         },
         addSymbols: function (s) {
-            sy.fun.symToLogicMaping = {};
             sy.fun.symToLogicMaping = { length:0 };
             for (var ef in s) {
                 Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
+            }
+        },
+        el : function(e, prop, op){ // el funcction is used to retrive other than attributes and style properties
+            prop = this.formateArg(prop, op);
+            if(prop.getter){
+                this.forEach(prop.getter, function(a,b,c,d){
+                    c[b] = e[b];  //e[b] : putting value in.
+                });
+                this.setReturn(e, prop.getter);
             }
         },
         $ : function(e, fun){
             fun.call(e);
         },
         $each: function(e, fun){
-            for(var i=0; i<e.length; i++){
-                fun.call(e[i], i, e);
-            }
+            this.for(e, function(a,b,c,d){
+                fun.call(a, a, b, c);
+            });
         }
     });
 
@@ -335,7 +335,7 @@
         width: { fun: 'width', symbol: '_', symPara: 'MONO', },                                         // width
         remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
         clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                      // clone
-        reduceCtx: { fun: 'reduceCtx', symbol: '$', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
+        reduceCtx: { fun: 'reduceCtx', symbol: '.', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
         attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
         addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
@@ -380,19 +380,18 @@
             newEle[0] ? newEle[0].nodeType ? this.prnd(e, newEle) : true : true;
         },
         setAttr: function (e, attr) {
-            for (var at in attr) {
-                if(at != "getter")
-                    e.setAttribute(at, attr[at]);
-            }
+            this.forEach(attr, function(a,b,c){
+                if(b != "getter")e.setAttribute(b, a);
+            });
         },
         getAttr: function(e, attr){
-            for(var prop in attr){
-                for(var i=0; i<e.attributes.length; i++){
-                    if(e.attributes[i].nodeName == prop){
-                        attr[prop] = e.attributes[i].nodeValue;
+            this.forEach(attr, function(a,b,c){
+                this.for(e.attributes, function(i,j,k){
+                    if(i.nodeName == b){
+                        c[b] = i.nodeValue;
                     }
-                }
-            }
+                });
+            });
             this.setReturn(e, attr);
         },
         removeAttr: function (e, attr) {
@@ -433,10 +432,19 @@
                 if (!this.alice[this.fn.alice]) this.alice[this.fn.alice] = this.subCtx[this.subCtx.length - 1];
             }
         },
-        for : function(collection, fun){
+        forEach : function(collection, fun){
+            var loop = {break :false};
+            for(var i in collection){
+                fun.call(this, collection[i], i, collection, loop) // param : property value, property name, main variable
+                if(loop.break)break;
+            }
+        },
+        for : function(collection, fun){ // it's work like normal for loop
+            var loop = {break :false};
             if(collection.length){
                 for(var i=0; i<collection.length; i++){
-                    fun.call(this, collection[i], i, collection);
+                    fun.call(this, collection[i], i, collection, loop);
+                    if(loop.break)break;
                 }
             }else{
                 fun.call(this, collection, 0, collection);
@@ -456,16 +464,16 @@
                 this.for(e, function(e){
                     var br = false;
                     if(r.indexOf(e) > -1){ // check if element is already took for return;
-                        for(var i=0; i<this.returnVal.length; i++){
-                            for(var prop in this.returnVal[i]){
-                                if(prop == 'el' && this.returnVal[i].el == e){
-                                    this.returnVal[i].val = new JSONs(this.returnVal[i].val).join(values); // copy one json into another json
+                        this.for(this.returnVal, function(a,b,c,loop){
+                            this.forEach(a, function(x,y,z,loop1){
+                                if(y == 'el' && a.el == e){
+                                    a.val = new JSONs(a.val).join(values); // copy one json into another json
                                     br = true;
                                 }
-                                if(br)break;
-                            }
-                            if(br)break;
-                        }
+                                if(br)loop1.break = true;
+                            });
+                            if(br)loop.break = true;
+                        });
                     }else{ // else init freshly 
                         vl.el = e;
                         vl.val = values;
@@ -474,10 +482,14 @@
                 });
             }
             if(this.returnVal.length == 1){
-                for(var prop in this.returnVal[0].val){
+                this.forEach(this.returnVal[0].val, function(a, b, c){
+                    if(i > 1)Break=true;else i++;
+                    val.push(a);
+                });
+                /*for(var prop in this.returnVal[0].val){
                     if(i > 1)break;else i++;
                     val.push(this.returnVal[0].val[prop]);
-                }
+                }*/
                 if(i==1) this.return = val[0];
                 else if(i > 1) this.return = this.returnVal[0].val;
             }else{
@@ -500,9 +512,9 @@
         return JSON.parse(jO);
     }
 
-    sy.prototype._js.prototype = sy.prototype;
+    sy.prototype._$S.prototype = sy.prototype;
 
-    return js = window.sy = sy;  // return main [ sy ] object
+    return $S = window.sy = sy;  // return main sy object
 })(document, window);
 
 var JSONs = function (obj) {
