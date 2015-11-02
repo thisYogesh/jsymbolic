@@ -242,10 +242,12 @@
             if(attr.getter)this.getCSS(e, attr.getter);
         },
         formateArg: function(args, obj){// used for to make arguments in to json object
-            if ((args.indexOf('=') == -1 || args.indexOf(':') == -1) && typeof obj != type.undefined){
-                args = obj[args];
+            if(typeof args != type.undefined){
+                if ((args.indexOf('=') == -1 || args.indexOf(':') == -1) && typeof obj != type.undefined ){
+                    args = obj[args];
+                }
+                args = typeof args == type.string ? this.mkAttrStr_to_JSON(args) : args;
             }
-            args = typeof args == type.string ? this.mkAttrStr_to_JSON(args) : args;
             return args;
         },
         _class: function (e, cprop) {
@@ -277,10 +279,9 @@
             if (!this.IFC) this.subCtx.push(el); else return el;
         },
         ehtml: function(e, attr, obj){
-            if(typeof attr != type.undefined)
-            if (attr.indexOf(':') == -1 && typeof obj != type.undefined) attr = obj[attr];
-            var html = this.htmlTostr(e, attr);
-            attr = {html : html}
+            attr = this.formateArg(attr, obj);
+            var html = this.htmlStr(e, "i"); // i is for to retrive innerHTML of element
+            attr = {innerHTML : html}
             this.setReturn(e, attr);
         },
         IFC_: function (fun, e, sel, op) {
@@ -362,9 +363,12 @@
             l = typeof l == "undefined" ? 0 : l;
             this.length = l;
         },
-        htmlTostr: function (e) {
-            if (!e) e = this.subCtx.length == 0 ? this.mainCtx : this.subCtx[this.subCtx.length - 1];
-            return e.outerHTML;
+        htmlStr: function (e, iohtml) {
+            if (!e)e = this.getEle(); // if e is not passed, take it from context.
+            if(iohtml == "i") // if i then retrive innerHTML
+                return e.innerHTML;
+            else if(iohtml == "o") // if o then retrive outerHTML
+                return e.outerHTML;
         },
         strToHtml: function (str) {
             var dumy = document.createElement('div');
