@@ -8,6 +8,10 @@
         undefined : 'undefined',
         boolean : 'boolean'
     };
+    var am = {
+        push : Array.prototype.push,
+        splice : Array.prototype.splice
+    };
     var bool = {true: true, false: false};
     var sy = function (sel, symbols, op) {
         var j = new sy.fun._$S(sel, symbols, op);
@@ -227,12 +231,11 @@
             if (this.subCtx) this.subCtx.splice(this.subCtx.length - len);
         },
         attr: function (e, attr, obj) {
+            attr = this.formateArg(attr, obj);
             if (this.fn.symFor != 'x') {
-                attr = this.formateArg(attr, obj);
                 this.setAttr(e, attr);
                 if(attr.getter)this.getAttr(e, attr.getter); 
             } else {
-                if (attr.indexOf(',') == -1 && obj[attr]) attr = obj[attr];
                 this.removeAttr(e, attr);
             }
         },
@@ -293,7 +296,7 @@
         addSymbols: function (s) {
             sy.fun.symToLogicMaping = { length:0 };
             for (var ef in s) {
-                Array.prototype.push.call(sy.fun.symToLogicMaping, s[ef]);
+                am.push.call(sy.fun.symToLogicMaping, s[ef]);
             }
         },
         el : function(e, prop, op){ // el funcction is used to retrive other than attributes and style properties
@@ -317,7 +320,7 @@
 
     /* symbol function which used by symbol character end */
     sy.fun.addSymbols({
-        el : { fun: 'el', symbol: 'e', symType: 'opt'},
+        el : { fun: 'el', symbol: 'e', symType: 'opt'},                                                 // return all properties of element 
         fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
         eachfn : { fun: '$each', symbol: '$*', symType: 'function'},                                    // executable function
         html: { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                         // get innerHtml or outerHtml
@@ -337,12 +340,13 @@
         remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
         clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                      // clone
         reduceCtx: { fun: 'reduceCtx', symbol: '.', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
-        attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // attribute
+        attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // add attribute
+        removeAttr: { fun: 'attr', symbol: '@x', symPara: 'MULTI', symFor: 'x', symType: 'opt' },       // remove attribute
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
         addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
+        removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
         bindEvent: { fun: 'bindEvent', symbol: 'E', symPara: 'MULTI', symType: 'opt' },                 // bind event
         unbindEvent: { fun: 'unbindEvent', symbol: 'Ex', symPara: 'MULTI', symType: 'opt' },            // unbind event
-        removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
         fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
         lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
     });
@@ -399,9 +403,9 @@
             this.setReturn(e, attr);
         },
         removeAttr: function (e, attr) {
-            for (var at in attr.split(',')) {
-                e.removeAttribute(attr.split(',')[at]);
-            }
+            this.forEach(attr.getter, function(a,b){
+                e.removeAttribute(b);
+            });
         },
         setCSS: function (e, css) {
             for (var style in css) {
