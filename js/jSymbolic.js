@@ -12,12 +12,13 @@
         push : Array.prototype.push,
         splice : Array.prototype.splice
     };
+    var jsEvent = [];
     var bool = {true: true, false: false};
-    var sy = function (sel, symbols, op) {
-        var j = new sy.fun._$S(sel, symbols, op);
+    var jSymbolic = function (sel, symbols, op) {
+        var j = new jSymbolic.fun._$S(sel, symbols, op);
         return typeof j.return == type.undefined ? j : j.return;
     };
-    sy.fun = sy.prototype = {
+    jSymbolic.fun = jSymbolic.prototype = {
         _$S: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
 			var args = arguments;//
             if (!this.mainCtx) { // fallback for next _js initialization
@@ -27,7 +28,7 @@
                 this.mainCtx = (function(sel){
                     var val;
                     if(sel.nodeType != 9 && sel.nodeType != 1 && typeof sel == type.string ){
-                        val = sy.selectorBuilder(doc, sel);
+                        val = jSymbolic.selectorBuilder(doc, sel);
                     }else{
                         val = sel;
                     }
@@ -68,22 +69,22 @@
                 }else if(this.fn.param){ // parameterised symbol
                     if(this.fn.symType != "function"){
                         if(!ele.length){
-                            this[this.fn.fun](ele, this.fn.param);
+                            this[this.fn.fun](ele, this.fn.param, this.op);
                         }else{
                             var el = [];
                             this.fn.symType == "context" ? this.IFC = true : this.IFC;
                             if(this.fn.symType == "index"){
-                                this[this.fn.fun](ele, this.fn.param);
+                                this[this.fn.fun](ele, this.fn.param, this.op);
                             }else{
                                 for( var x = 0; x < ele.length; x++ ){
-                                    this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param)) :this[this.fn.fun](ele[x],this.fn.param);
+                                    this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param, this.op)) :this[this.fn.fun](ele[x],this.fn.param, this.op);
                                 }
                             }
                             this.IFC = false;
                             if(el.length > 0) this.subCtx.push(el.clean());
                         }
                     }else if(this.fn.symType == "function"){
-                        this[this.fn.fun](ele, this.fn.param);
+                        this[this.fn.fun](ele, this.fn.param, this.op);
                     }
                 }
             });
@@ -136,32 +137,16 @@
                 return def;
             }
             else return def;
-        },
-        retFun: function (symbol) {
-            var rxAlice = /^<([a-z A-Z 0-9]+)>$/; //^([<|>|\?|0-9]+)?:([a-z]+)$/;
-            var cAlice = symbol.match(rxAlice);
-            var symbol = symbol.split(':');
-            if (!cAlice) {
-                var fn, sb = this.symToLogicMaping;
-                for(var s = 0;s < sb.length; s++){
-					if( sb[s].symbol == symbol ){
-						return sb[s];
-					}
-				} 
-            } else if (cAlice) {
-                fn = { fun: 'alice', aliceEle: this.alice[cAlice.last()] };
-                return fn;
-            }
         }
     };
-    sy.ext = function (extFun) {
+    jSymbolic.ext = function (extFun) {
         for (var fun in extFun) {
             this.prototype[fun] = extFun[fun];
         }
     }
     /* symbol function which used by symbol character end  */
 
-    sy.ext({
+    jSymbolic.ext({
         nxt: function (e) {
             e.nextSibling.nodeType == 3 ? e = e.nextSibling.nextSibling : e = e.nextSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
@@ -179,7 +164,7 @@
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
         },
         find: function (e, sel) {
-            e = sy.selectorBuilder(e, sel);
+            e = jSymbolic.selectorBuilder(e, sel);
             if (!this.IFC) e.length > 0 || e.nodeType ? this.subCtx.push(e) : e; else return e;
         },
 		indx: function(el, indx){
@@ -234,7 +219,7 @@
             attr = this.formateArg(attr, obj);
             if (this.fn.symFor != 'x') {
                 this.setAttr(e, attr);
-                if(attr.getter)this.getAttr(e, attr.getter); 
+                if(attr.val)this.getAttr(e, attr.val); 
             } else {
                 this.removeAttr(e, attr);
             }
@@ -242,7 +227,7 @@
         css: function (e, attr, obj) {
             attr = this.formateArg(attr, obj);
             this.setCSS(e, attr);
-            if(attr.getter)this.getCSS(e, attr.getter);
+            if(attr.val)this.getCSS(e, attr.val);
         },
         formateArg: function(args, obj){// used for to make arguments in to json object
             if(typeof args != type.undefined){
@@ -294,18 +279,18 @@
             return el;
         },
         addSymbols: function (s) {
-            sy.fun.symToLogicMaping = { length:0 };
+            jSymbolic.fun.symToLogicMaping = { length:0 };
             for (var ef in s) {
-                am.push.call(sy.fun.symToLogicMaping, s[ef]);
+                am.push.call(jSymbolic.fun.symToLogicMaping, s[ef]);
             }
         },
         el : function(e, prop, op){ // el funcction is used to retrive other than attributes and style properties
             prop = this.formateArg(prop, op);
-            if(prop.getter){
-                this.forEach(prop.getter, function(a,b,c,d){
+            if(prop.val){
+                this.forEach(prop.val, function(a,b,c,d){
                     c[b] = e[b];  //e[b] : putting value in.
                 });
-                this.setReturn(e, prop.getter);
+                this.setReturn(e, prop.val);
             }
         },
         $ : function(e, fun){
@@ -318,8 +303,89 @@
         }
     });
 
+    /*jSymbolic event binding function*/
+    jSymbolic.ext({
+        symEvent : function(e, args, op){
+            /*  e           :: element
+                evName      :: event name, 
+                fun         :: event function,
+                o_f         :: on/ off,
+                bubbling    :: true/ false event bubbling, capturing
+            */
+            var ev = this.formateEventArg(args, op); // formatting args in to evObj
+            ev.eventName = ev.eventName.split(" ");
+            if(this.fn.symbol == "+="){ // bind event
+                if(ev.o_f == "off"){
+                    this.for(ev.eventName, function(evName, b, c, d){
+                        e.addEventListener(evName, ev.callback, ev.bubbling); 
+                        this.trackEvent(e, evName, ev.callback);
+                    });
+                }
+            }else if(this.fn.symbol == "-="){ // unbind event
+                if(ev.o_f == "off"){
+                    this.for(ev.eventName, function(evName, b, c, d){
+                        var events = this.getEvent(e, evName);
+                        this.for(events, function(i, j, k){
+                            e.removeEventListener(evName, i, ev.bubbling);
+                        });
+                    });
+                }
+            }
+        },
+        getEvent : function(e, eventName){ // getting event on element
+            var ev;
+            this.for(jsEvent, function(a,b,c,d){
+                if(a.el == e && a.events[eventName].length > 0){
+                    ev = a.events[eventName];
+                    d.break = true;
+                }
+            });
+            return ev;
+        },
+        trackEvent : function(e, evName, evCallback){ // saves all events against element in jsEvent variable
+            var elExists = false;
+            this.for(jsEvent, function(a,b,c,d){
+                if(a.el == e){ // if true meanse some events are applied on this elements
+                    if(a.events.hasOwnProperty(evName)){ // checking event is exists on the element
+                        a.events[evName].push(evCallback) // if present then add this one
+                    }else{ // else add new event into jsEvent against element
+                        a.events[evName] = []; // add event to element variable
+                        a.events[evName].push(evCallback);
+                    }
+                    elExists = true;
+                    d.break = true;
+                }
+            });
+
+            if(!elExists){ // else add new entry into jsEvent variable
+                var evt = {el : e, events: {}};
+                evt.events[evName] = [];
+                evt.events[evName].push(evCallback);
+                jsEvent.push(evt);
+            }
+        },
+        formateEventArg : function(args, op){ // formatting args in to evObj
+            var evObj = {};
+            if(args.length > 0){
+                args = args.split(",");
+                evObj.eventName = args[0];
+                evObj.callback = args[1] != undefined ? op[args[1]] != undefined ? op[args[1]] : args[1] : args[1];
+                evObj.o_f = args[2];
+                evObj.bubbling = args[3];
+
+                evObj = this.obExt({
+                    eventName : "",
+                    callback : "",
+                    o_f : "off",
+                    bubbling : bool.false
+                }, evObj);
+            }
+            return evObj;
+        }
+    })
+
     /* symbol function which used by symbol character end */
-    sy.fun.addSymbols({
+    jSymbolic.fun.addSymbols({
         el : { fun: 'el', symbol: 'e', symType: 'opt'},                                                 // return all properties of element 
         fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
         eachfn : { fun: '$each', symbol: '$*', symType: 'function'},                                    // executable function
@@ -345,24 +411,24 @@
         css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
         addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
         removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
-        bindEvent: { fun: 'bindEvent', symbol: 'E', symPara: 'MULTI', symType: 'opt' },                 // bind event
-        unbindEvent: { fun: 'unbindEvent', symbol: 'Ex', symPara: 'MULTI', symType: 'opt' },            // unbind event
+        bindEvent: { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                 // bind event
+        unbindEvent: { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },            // unbind event
         fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
         lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
     });
     /* jSymbolic event binding */
-    sy.ext({
+    jSymbolic.ext({
         load: function (e, fun) {
             if (document.body || document.readyState == 'complete') {
                 fun();
             } else {
-                setTimeout(function () { sy.prototype.load(e, fun) }, 1);
+                setTimeout(function () { jSymbolic.prototype.load(e, fun) }, 1);
             }
         }
     });
     /* jSymbolic event binding end */
 
-    sy.ext({
+    jSymbolic.ext({
         len: function (l) {
             l = typeof l == "undefined" ? 0 : l;
             this.length = l;
@@ -389,7 +455,7 @@
         },
         setAttr: function (e, attr) {
             this.forEach(attr, function(a,b,c){
-                if(b != "getter")e.setAttribute(b, a);
+                if(b != "val")e.setAttribute(b, a);
             });
         },
         getAttr: function(e, attr){
@@ -403,13 +469,13 @@
             this.setReturn(e, attr);
         },
         removeAttr: function (e, attr) {
-            this.forEach(attr.getter, function(a,b){
+            this.forEach(attr.val, function(a,b){
                 e.removeAttribute(b);
             });
         },
         setCSS: function (e, css) {
             for (var style in css) {
-                if(style != "getter")
+                if(style != "val")
                     e.style[style] = css[style];
             }
         },
@@ -419,14 +485,14 @@
             }
             this.setReturn(e, css);
         },
-        mkAttrStr_to_JSON: function (attr) {
+        mkAttrStr_to_JSON: function (attr) {// making attribute : value pairs
             var attr = attr.split(/,|;/);
             var aryJSONstr = {};
             for (var at = 0; at < attr.length; at++) {
                 var attrs = attr[at].split(/=|:/);
                 if(attrs.length == 1){
-                    if(!aryJSONstr.getter)aryJSONstr.getter = {};
-                    aryJSONstr.getter[attrs[0]] = "";
+                    if(!aryJSONstr.val)aryJSONstr.val = {};
+                    aryJSONstr.val[attrs[0]] = "";
                     continue;
                 }
                 var attrName = attrs[0],attrVal = attrs[1];
@@ -505,12 +571,12 @@
             }
         }
     });
-    sy.selectorBuilder = function (ctx, s) {
+    jSymbolic.selectorBuilder = function (ctx, s) {
         var el = Sizzle(s, ctx);
         return el.length == 1 ? el[0] : el;/**/
     }
 
-    sy.addJSONP = function (jO, prop, val) {
+    jSymbolic.addJSONP = function (jO, prop, val) {
         var newProp = '\"' + prop + '\":' + val;
         jO = JSON.stringify(jO);
         jO = jO.match(/(\"\w+\"\:\w+\,)+\"\w+\"\:\w+/);
@@ -520,9 +586,9 @@
         return JSON.parse(jO);
     }
 
-    sy.prototype._$S.prototype = sy.prototype;
+    jSymbolic.prototype._$S.prototype = jSymbolic.prototype;
 
-    return $S = window.sy = sy;  // return main sy object
+    return $S = win.jSymbolic = jSymbolic;  // return main jSymbolic object
 })(document, window);
 
 var JSONs = function (obj) {
@@ -585,7 +651,7 @@ Array.ext = function (fun) {
 
 Array.ext({
     removeDuplicate: function (op) {
-        var op = js.fun.obExt({
+        var op = $S.fun.obExt({
             targetChar: '',
             removeOp: 'normal' // normal | all
         }, op);
