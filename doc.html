@@ -114,6 +114,77 @@ resolving return value : resolved !
 
 [!] after entering global variable in attribute value then its not working
 
+almost all 4 following featurs are completed // 01:34 PM 12-11-2015
+. dom traversing
+. return
+. event binding
+. dataset
 
+now take on to normal functions link : height, width, position, hide, show, scrolltop
 </code>
 </pre>
+
+<!--
+/*md = new Date();
+        console.group('At Start');
+        console.log('Hour : ' + md.getHours() + '\n Minute : ' + md.getMinutes() +'\n Second : ' + md.getSeconds() + '\n MiliSecond : ' + md.getMilliseconds());
+        console.groupEnd();
+        // jQuery Load function
+        $(document).ready(function(){
+            var t = Number(md.getMilliseconds());
+            d = new Date();
+            t = t - Number(d.getMilliseconds());
+            console.group('By Jquery');
+            console.log('Hour : ' + d.getHours() + '\n Minute : ' + d.getMinutes() +'\n Second : ' + d.getSeconds() + '\n MiliSecond : ' + d.getMilliseconds() + '\n Difference : ' + t);
+            console.groupEnd();
+        });
+
+        // jSymbolic Load function
+        js(document,':)',function(){
+            var t = Number(md.getMilliseconds());
+            d = new Date();
+            t = t - Number(d.getMilliseconds());
+            console.group('By Me');
+            console.log('Hour : ' + d.getHours() + '\n Minute : ' + d.getMinutes() +'\n Second : ' + d.getSeconds() + '\n MiliSecond : ' + d.getMilliseconds() + '\n Difference : ' + t);
+            console.groupEnd();
+            d = document.getElementById('d');
+            //alert(d.innerHTML);
+        });
+        // Default window Load function
+        window.onload = function(){
+            var t = Number(md.getMilliseconds());
+            d = new Date();
+            t = t - Number(d.getMilliseconds());
+            console.group('By Window');
+            console.log('Hour : ' + d.getHours() + '\n Minute : ' + d.getMinutes() +'\n Second : ' + d.getSeconds() + '\n MiliSecond : ' + d.getMilliseconds() + '\n Difference : ' + t);
+            console.groupEnd();
+        }
+        
+        $(function(){
+            var inp = document.getElementsByTagName('input');
+            inp[1].onkeydown = function(e){
+                if(e.keyCode == 13){
+                    checkRegex();
+                }
+            };
+            function checkRegex(){
+                var s = inp[0].value;
+                var Rx = new RegExp(inp[1].value);
+                var rxr = s.match(Rx);
+                var od = document.getElementById('output');
+                od.innerHTML = '';
+                for(i=0;i<rxr.length;i++){
+                    var sp = document.createElement('span');
+                    sp.innerHTML = '['+i+'] ' + rxr[i];
+                    od.appendChild(sp);
+                    od.appendChild(document.createElement('br'));
+                }
+                od.style.backgroundColor = '#9ACD32';
+                od.style.color = 'red';
+                setTimeout(function(){
+                    od.style.backgroundColor = 'white';
+                    od.style.color = 'black';
+                },1000);
+            };
+        });*/
+-->

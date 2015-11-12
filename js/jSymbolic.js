@@ -15,11 +15,11 @@
     var jsEvent = [];
     var bool = {true: true, false: false};
     var jSymbolic = function (sel, symbols, op) {
-        var j = new jSymbolic.fun._$S(sel, symbols, op);
+        var j = new jSymbolic.fun._(sel, symbols, op);
         return typeof j.return == type.undefined ? j : j.return;
     };
     jSymbolic.fun = jSymbolic.prototype = {
-        _$S: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
+        _: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
 			var args = arguments;//
             if (!this.mainCtx) { // fallback for next _js initialization
                 sel ? this.mainSelector = sel : sel;
@@ -37,6 +37,7 @@
                 this.subCtx = [];
             } else {
                 this.oldObject = true;
+                this.return = null; // asign null to return, for next time when $S._ function initiate.
                 this.symbols = args[0];
                 this.op = args[1];
             }
@@ -302,8 +303,8 @@
             });
         }
     });
-
-    /*jSymbolic event binding function*/
+    /* symbol function which used by symbol character */
+    /*jSymbolic event binding functions*/
     jSymbolic.ext({
         symEvent : function(e, args, op){
             /*  e           :: element
@@ -382,9 +383,32 @@
             }
             return evObj;
         }
-    })
+    });
 
-    /* symbol function which used by symbol character end */
+    /* dataset manipulation */
+
+    jSymbolic.ext({
+        dataset : function(e, args, op){ // asign dataset properties
+            args = this.formateArg(args, op);
+            this.forEach(args, function(a, b, c, d){
+                if(b != "val"){
+                    e.dataset[b] = a;
+                }
+            });
+            if(args.val){
+                this.dataget(e, args.val)
+                this.setReturn(e, args.val);
+            }
+        },
+        dataget : function(e, args){ // get dataset properties
+            this.forEach(args, function(a,b,c,d){
+                c[b] = e.dataset[b];
+            });
+        }
+    });
+
+    /* dataset manipulation */
+    
     jSymbolic.fun.addSymbols({
         el : { fun: 'el', symbol: 'e', symType: 'opt'},                                                 // return all properties of element 
         fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
@@ -412,21 +436,24 @@
         addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
         removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
         bindEvent: { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                 // bind event
-        unbindEvent: { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },            // unbind event
+        unbindEvent: { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },               // unbind event
         fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
         lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
+        dataset : { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                    // manipulating html5's dataset
+        load : { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' }                          // jSymbolic exclusive symbol for DOM load event
     });
-    /* jSymbolic event binding */
+    
+    /* jSymbolic exclusive  */
     jSymbolic.ext({
-        load: function (e, fun) {
+        load: function (e, fun, op) {
             if (document.body || document.readyState == 'complete') {
                 fun();
             } else {
-                setTimeout(function () { jSymbolic.prototype.load(e, fun) }, 1);
+                setTimeout(function () { this.load(e, fun, op) }.bind(this), 1);
             }
         }
     });
-    /* jSymbolic event binding end */
+    
 
     jSymbolic.ext({
         len: function (l) {
@@ -586,7 +613,7 @@
         return JSON.parse(jO);
     }
 
-    jSymbolic.prototype._$S.prototype = jSymbolic.prototype;
+    jSymbolic.prototype._.prototype = jSymbolic.prototype;
 
     return $S = win.jSymbolic = jSymbolic;  // return main jSymbolic object
 })(document, window);
