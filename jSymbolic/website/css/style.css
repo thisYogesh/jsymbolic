@@ -1,0 +1,65 @@
+*{font-family:"lobster";margin:0;padding:0;border:0;box-sizing: border-box}
+body{background-color:#F6F6F6}
+h1{font-size: 2em}
+h2{font-size: 1.5em}
+h3{font-size: 1.2em}
+h4{font-size: 1em}
+h5{font-size: 0.5em}
+h6{font-size: 0.2em}
+.slogan {
+    font-size: 0.5em;
+    color: #A2C5FF;
+}
+.main-logo {
+    font-size: 2em;
+    position: absolute;
+    background: #4285F4;
+    padding: 18px 18px 0;
+}
+.main-title {
+    color: #Fff;
+}
+.main-logo:after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 0;
+    border-width: 0px 0px 80px 36px;
+    border-style: solid;
+    border-color: transparent #255BB5;
+}
+.menu {
+    left: 0;
+    width: 100%;
+}
+.menu_wrapper {
+    line-height: 23px;
+    text-align: right;
+}
+.menu_wrapper > li {
+    list-style-type: none;
+    height: 14px;
+    line-height: 14px;
+    display: inline-block;
+    vertical-align: baseline;
+}
+.menu_wrapper > li a {
+    font-size: 0.5em;
+    text-decoration: none;
+    color: #fff;
+    vertical-align: top;
+    font-family: monospace;
+}
+.menu_wrapper > li:after {
+    content: "";
+    display: inline-block;
+    vertical-align: top;
+    padding: 2px;
+    border-radius: 50%;
+    background: #fff;
+    margin: 5px;
+}
+
+.menu_wrapper > li:last-child:after {
+    display: none;
+}
