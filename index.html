@@ -12,7 +12,6 @@
 							var op = el._('#{op}');
 							if(op == 'close'){
 								el._('#{op=open}')._('>.&{display:none}');
-								el.data('op','open').next().css('display','none');
 							}else{
 								el._('#{op=close}')._('>.&{display:block}');
 							}
@@ -28,10 +27,12 @@
                 margin-bottom:10px;
             }
             div {display: block;}
+            .anim{width: 100px;height: 100px;background: #000; float: left;}
         </style>
 	</head>
 <body>
     <h1 class="h" align="center">The jSymbolic</h1>
+    <div class="anim"></div>
     <div class="main" style="background:pink;" id="d">
         div
         <h1 style="background:hotpink;">
@@ -62,12 +63,12 @@
             </span>
         </p>
     </div>
-    Regex
     <div>
+        Regex
         <input type="text" placeholder="String" />
         <input type="text" placeholder="Regex Exp" />
         <div id="output"></div>
+        <button id="btn">button</button>
     </div>
-    <button id="btn">button</button>
 </body>
 </html>
