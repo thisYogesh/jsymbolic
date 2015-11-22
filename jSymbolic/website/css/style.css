@@ -10,24 +10,19 @@ h6{font-size: 0.2em}
     font-size: 0.5em;
     color: #A2C5FF;
 }
+
 .main-logo {
     font-size: 2em;
     position: absolute;
     background: #4285F4;
     padding: 18px 18px 0;
+    top:0;
+    left:0
 }
 .main-title {
     color: #Fff;
 }
-.main-logo:after {
-    content: "";
-    position: absolute;
-    left: 100%;
-    top: 0;
-    border-width: 0px 0px 80px 36px;
-    border-style: solid;
-    border-color: transparent #255BB5;
-}
+
 .menu {
     left: 0;
     width: 100%;
@@ -62,4 +57,57 @@ h6{font-size: 0.2em}
 
 .menu_wrapper > li:last-child:after {
     display: none;
+}
+.beta-lbl {
+    position: absolute;
+    right: -6px;
+    top: 6px;
+    font-size: 14px;
+    background: #A2C5FF;
+    color: #fff;
+    text-shadow: 0px -1px 0px #013388;
+    padding: 0 6px;
+}
+
+.beta-lbl:after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 0;
+    margin: 0;
+    border-width: 6px 0px 0px 6px;
+    border-style: solid;
+    border-color: transparent #023FA5;
+}
+
+.jjoke {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: center;
+    font-family: monospace;
+    font-size: 1.2em;
+}
+
+.subtext {
+    font-style: italic;
+    font-family: inherit;
+}
+
+.maintitle {
+    margin: 35px 0;
+}
+.dcnt {
+    text-align: center;
+    margin: 20px;
+}
+
+.dwnl {
+    padding: 16px 20px;
+    display: inline-block;
+    margin: 20px;
+    border: 1px solid #4285F4;
+    border-radius: 3px;
+    text-decoration: none;
+    color: #4285F4;
+    text-shadow: 0px 1px 0px #FFF, 0px 2px 1px #4285F4;
 }
