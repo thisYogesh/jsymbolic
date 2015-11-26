@@ -63,7 +63,7 @@
                 var ele = this.getEle();
                 if(!this.fn.param){ // standalone symbol
                     if(!ele.length){
-                        this[this.fn.fun](ele);
+                        this[this.fn.fun](ele, this.fn.param, this.op);
                     }else{
                         var el = [];
                         if(this.fn.symType != "rctx"){
@@ -459,11 +459,15 @@
         load : { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' }                          // jSymbolic exclusive symbol for DOM load event
     });
     
-    /* jSymbolic exclusive  */
+    /* jSymbolic exclusive load symbol  */
     jSymbolic.ext({
         load: function (e, fun, op) {
             if (document.body || document.readyState == 'complete') {
-                fun();
+                if(fun != undefined  && typeof fun == type.function) {
+                    fun();
+                }else if(op != undefined  && typeof op == type.function){
+                    op();
+                }
             } else {
                 setTimeout(function () { this.load(e, fun, op) }.bind(this), 1);
             }
