@@ -1,10 +1,8 @@
 /*
  * jSymbolic javaScript Library v1.0 Beta
- * Copyright 2015, Yogesh Jagdale
- * http://www.jsymbolic.com
- * 
- * Includes Sizzle.js (c) jQuery Foundation, Inc.
+ * Includes Sizzle.js
  * http://sizzlejs.com/
+ * Copyright 2015, Yogesh Jagdale
  */
 (function (doc, win) {
     var type = {
@@ -19,55 +17,38 @@
         push : Array.prototype.push,
         splice : Array.prototype.splice
     };
-    var jsEvent = []; // this variable used for jSymbolic event handeling tracking
+    var jsEvent = [];
     var bool = {true: true, false: false};
-    var udf = 0; // this variable used for jSymbolic user defined function
     var jSymbolic = function (sel, symbols, op) {
         var j = new jSymbolic.fun._(sel, symbols, op);
         return typeof j.return == type.undefined ? j : j.return;
     };
     jSymbolic.fun = jSymbolic.prototype = {
-        _: function (sel, symbols, op) { 
-            /* 
-                op : it is used for callback function 
-                symbols : it is used for the assign symbols
-            */
+        _: function (sel, symbols, op) { // the parameter op : it is used for callback function and symbols : it is used for the assign symbols
 			var args = arguments;//
-            sel ? this.sel = sel : sel;
-            symbols ? this.symbols = symbols : symbols;
-            op ? this.op = op : op;
-            var chsym = this.filterSymbols(sel); // check for utility symbol
-            if( chsym.length == 0 ){ // chsym.length == 0 i.e. selector is not associated with any symbols
-                if (!this.mainCtx) { // fallback for next _js initialization
-                    this.mainCtx = (function(sel){
-                        var val;
-                        if(sel.nodeType != 9 && sel.nodeType != 1 && typeof sel == type.string ){
-                            val = jSymbolic.selectorBuilder(doc, sel);
-                        }else{
-                            val = sel;
-                        }
-                        return val;
-                    })(sel);
-                    this.subCtx = [];
-                } else {
-                    this.oldObject = true;
-                    this.return = null; // asign null to return, for when $S._ function initiate next time.
-                    this.symbols = args[0];
-                    this.op = args[1];
-                }
-
-                this.IFC = false; // Internal function calling
-                this.symbols ? this.sym_to_fn() : this.symbols;
-                //this.splice = [].splice;
-            }else if( chsym.length == 1 && chsym[0].symType == "util" ){ //chsym.length == 1 i.e. selector is associated with any one of symbols
-                if(chsym[0].fun == "ajax"){ // for ajax
-                    this.op = this.symbols;
-                    this.symbols = this.sel;
-                    this.ajax(this.symbols, this.op);
-                }else if(chsym[0].fun == "plugin"){ // for plugin
-                    this.plugin(this.symbols, this.op);
-                }
+            if (!this.mainCtx) { // fallback for next _js initialization
+                sel ? this.mainSelector = sel : sel;
+                symbols ? this.symbols = symbols : symbols;
+                op ? this.op = op : op;
+                this.mainCtx = (function(sel){
+                    var val;
+                    if(sel.nodeType != 9 && sel.nodeType != 1 && typeof sel == type.string ){
+                        val = jSymbolic.selectorBuilder(doc, sel);
+                    }else{
+                        val = sel;
+                    }
+                    return val;
+                })(sel);
+                this.subCtx = [];
+            } else {
+                this.oldObject = true;
+                this.return = null; // asign null to return, for next time when $S._ function initiate.
+                this.symbols = args[0];
+                this.op = args[1];
             }
+            this.IFC = false; // Internal function calling
+            this.symbols ? this.sym_to_fn() : this.symbols;
+            //this.splice = [].splice;
             return this.oldObject ? this.return ? this.return : this : this;
         },
         sym_to_fn: function () {
@@ -75,11 +56,9 @@
             this.for(fn, function(a,b,c){
                 this.fn = a; // getting function set
                 var ele = this.getEle();
-                if(this.fn.symType == "udf"){ // for plugin
-                    this[this.fn.fun]();
-                }else if(!this.fn.param){ // standalone symbol
+                if(!this.fn.param){ // standalone symbol
                     if(!ele.length){
-                        this[this.fn.fun](ele, this.fn.param, this.op);
+                        this[this.fn.fun](ele);
                     }else{
                         var el = [];
                         if(this.fn.symType != "rctx"){
@@ -157,7 +136,7 @@
             if (typeof udef != type.undefined) {
                 var dkey = new JSONs().getKeys(def);
                 for (var p=0;p<dkey.length;p++) {
-                    if ( typeof udef[dkey[p]] != type.undefined ){
+                    if (typeof udef[dkey[p]] != type.undefined ){
                         def[dkey[p]] = udef[dkey[p]];
                     }
                 }
@@ -167,27 +146,19 @@
         }
     };
     jSymbolic.ext = function (extFun) {
-        if(arguments.length == 1){
-            for (var fun in extFun) {
-                this.prototype[fun] = extFun[fun];
-            }
+        for (var fun in extFun) {
+            this.prototype[fun] = extFun[fun];
         }
     }
     /* symbol function which used by symbol character end  */
 
     jSymbolic.ext({
         nxt: function (e) {
-            while(e.nextSibling.nodeType == 3 && typeof e.nextSibling.nodeType == type.number){
-                e = e.nextSibling;
-            }
-            e = e.nextSibling;
+            e.nextSibling.nodeType == 3 ? e = e.nextSibling.nextSibling : e = e.nextSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
         },
         prev: function (e) {
-            while(e.previousSibling.nodeType == 3 && typeof e.previousSibling.nodeType == type.number){
-                e = e.previousSibling;
-            }
-            e = e.previousSibling;
+            e.previousSibling.nodeType == 3 ? e = e.previousSibling.previousSibling : e = e.previousSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
         },
         parent: function (e) {
@@ -233,9 +204,6 @@
             if (e.nextSibling.nodeType) this.prnd(e.nextSibling, newEle);
             else this.apnd(e.parentNode, newEle);
         },
-        text: function(e, args, op){
-            this.el(e, "textContent", op);
-        },
         sbls: function (e) {
             var el = this.IFC_(e.parentNode, 'childs');
             if (el) {
@@ -269,7 +237,7 @@
         },
         formateArg: function(args, obj){// used for to make arguments in to json object
             if(typeof args != type.undefined){
-                if ((args.indexOf('=') == -1 && args.indexOf(':') == -1) && typeof obj != type.undefined ){
+                if ((args.indexOf('=') == -1 || args.indexOf(':') == -1) && typeof obj != type.undefined ){
                     args = obj[args];
                 }
                 args = typeof args == type.string ? this.mkAttrStr_to_JSON(args) : args;
@@ -305,25 +273,24 @@
             if (!this.IFC) this.subCtx.push(el); else return el;
         },
         ehtml: function(e, attr, obj){
-            /*attr = this.formateArg(attr, obj);
+            attr = this.formateArg(attr, obj);
             var html = this.htmlStr(e, "i"); // i is for to retrive innerHTML of element
             attr = {innerHTML : html}
-            this.setReturn(e, attr);*/
-            this.el(e, "innerHTML", obj);
+            this.setReturn(e, attr);
         },
-        IFC_: function (e, fun, sel, op) {
-            this.IFC = true;
+        IFC_: function (fun, e, sel, op) {
+            this.IFC = !this.IFC;
             var el = this[fun](e, sel, op);
-            this.IFC = false;
+            this.IFC = !this.IFC;
             return el;
         },
-        /*addSymbols: function (s) {
-            jSymbolic.fun.symToLogicMaping = [];
-            for (var i=0, i < s.length; i++) {
-                jSymbolic.fun.symToLogicMaping.push(s[i]);
+        addSymbols: function (s) {
+            jSymbolic.fun.symToLogicMaping = { length:0 };
+            for (var ef in s) {
+                am.push.call(jSymbolic.fun.symToLogicMaping, s[ef]);
             }
-        },*/
-        el : function(e, prop, op){ // el function is used to retrive other than attributes and style properties
+        },
+        el : function(e, prop, op){ // el funcction is used to retrive other than attributes and style properties
             prop = this.formateArg(prop, op);
             if(prop.val){
                 this.forEach(prop.val, function(a,b,c,d){
@@ -408,14 +375,7 @@
             if(args.length > 0){
                 args = args.split(",");
                 evObj.eventName = args[0];
-                evObj.callback = (function(){
-                    if(args[1] != undefined && op[args[1]] != undefined){
-                        return op[args[1]];
-                    }else if(args[1] == undefined && typeof op == type.function){
-                        return op;
-                    }
-                    //args[1] != undefined ? op[args[1]] != undefined ? op[args[1]] : args[1] : args[1];
-                })();
+                evObj.callback = args[1] != undefined ? op[args[1]] != undefined ? op[args[1]] : args[1] : args[1];
                 evObj.o_f = args[2];
                 evObj.bubbling = args[3];
 
@@ -454,80 +414,51 @@
 
     /* dataset manipulation */
     
-    /* jSymbolic enter to plugin */
-
-    jSymbolic.ext({
-        plugin : function(symbol, fun){
-            var symHandler = {
-                fun : "udf" + udf++, // 
-                symbol : symbol,
-                symType : "udf"
-            }
-            //jSymbolic.ext(symHandler.fun, fun);
-            jSymbolic.prototype[symHandler.fun] = function(){
-                this.pluginInit(fun);
-            }
-            this.symToLogicMaping.push(symHandler); // adding symHandler object in symbol list
-        },
-        pluginInit : function(fun){
-            //console.log(fun);
-            fun();
-        }
+    jSymbolic.fun.addSymbols({
+        el : { fun: 'el', symbol: 'e', symType: 'opt'},                                                 // return all properties of element 
+        fn : { fun: '$', symbol: '$', symType: 'function'},                                             // executable function
+        eachfn : { fun: '$each', symbol: '$*', symType: 'function'},                                    // executable function
+        html: { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                         // get innerHtml or outerHtml
+        nxt: { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                          // next
+        prev: { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                        // previous
+        parent: { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                    // parent
+        after: { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                        // after
+        before: { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                      // before
+        find: { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                       // find
+        indx: { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'index' },                         // find within collection by index
+        sbls: { fun: 'sbls', symbol: '~', symPara: 'MONO', symType: 'context' },                        // siblings
+        childs: { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'context' },                    // childrens
+        append: { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                      // append
+        prepend: { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                    // prepend
+        height: { fun: 'height', symbol: '|', symPara: 'MONO' },                                        // height
+        width: { fun: 'width', symbol: '_', symPara: 'MONO', },                                         // width
+        remove: { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                         // remove
+        clone: { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                      // clone
+        reduceCtx: { fun: 'reduceCtx', symbol: '.', symPara: 'exe', symType: 'rctx' },                  // poping the context from mainCtx
+        attr: { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },              // add attribute
+        removeAttr: { fun: 'attr', symbol: '@x', symPara: 'MULTI', symFor: 'x', symType: 'opt' },       // remove attribute
+        css: { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                             // CSS
+        addClass: { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },       // add CSS class
+        removeClass: { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },    // remove CSS class
+        bindEvent: { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                 // bind event
+        unbindEvent: { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },               // unbind event
+        fst_by_indx: { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from 1 to end using index
+        lst_by_indx: { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' }, // finding elements from last to first elements using index
+        dataset : { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                    // manipulating html5's dataset
+        load : { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' }                          // jSymbolic exclusive symbol for DOM load event
     });
-
-    /* jSymbolic enter to plugin */
-
-    jSymbolic.fun.symToLogicMaping = [
-        { fun: 'el', symbol: 'e', symType: 'opt'},                                          // return all properties of element 
-        { fun: '$', symbol: '$', symType: 'function'},                                      // executable function
-        { fun: '$each', symbol: '$*', symType: 'function'},                                 // executable function
-        { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                   // get innerHtml or outerHtml
-        { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                   // next
-        { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                  // previous
-        { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                // parent
-        { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                   // after
-        { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                  // before
-        { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                 // find
-        { fun: 'indx', symbol: '!', symPara: 'MULTI', symType: 'index' },                   // find within collection by index
-        { fun: 'sbls', symbol: '~', symPara: 'MONO', symType: 'context' },                  // siblings
-        { fun: 'childs', symbol: '<>', symPara: 'exe', symType: 'context' },                // childrens
-        { fun: 'append', symbol: '>+', symPara: 'MULTI', symType: 'opt' },                  // append
-        { fun: 'prepend', symbol: '+<', symPara: 'MULTI', symType: 'opt' },                 // prepend
-        { fun: 'height', symbol: '|', symPara: 'MONO' },                                    // height
-        { fun: 'width', symbol: '_', symPara: 'MONO', },                                    // width
-        { fun: 'remove', symbol: 'x', symPara: 'exe', symType: 'opt' },                     // remove
-        { fun: 'clone', symbol: '||', symPara: 'context', symType: 'opt' },                 // clone
-        { fun: 'reduceCtx', symbol: '.', symPara: 'exe', symType: 'rctx' },                 // poping the context from mainCtx
-        { fun: 'attr', symbol: '@', symPara: 'MULTI', symFor: '+', symType: 'opt' },        // add attribute
-        { fun: 'attr', symbol: '@x', symPara: 'MULTI', symFor: 'x', symType: 'opt' },       // remove attribute
-        { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                      // CSS
-        { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },     // add CSS class
-        { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },     // remove CSS class
-        { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                // bind event
-        { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },                // unbind event
-        { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from 1 to end using index
-        { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from last to first elements using index
-        { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                  // manipulating html5's dataset
-        { fun: 'text', symbol: ',', symType: 'opt' },                                       // retrive text from element
-        { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' },                    // jSymbolic exclusive symbol for DOM load event
-        { fun : 'plugin', symbol: '(%)', symPara: 'MULTI', symType: 'util'},                // add plugin
-        { fun: 'ajax', symbol: '>X<', symPara: 'MULTI', symType: 'util'}                    // ajax (Asyncronus javascript and XML)
-    ];
     
-    /* jSymbolic exclusive load symbol  */
+    /* jSymbolic exclusive  */
     jSymbolic.ext({
         load: function (e, fun, op) {
             if (document.body || document.readyState == 'complete') {
-                if(fun != undefined  && typeof fun == type.function) {
-                    fun();
-                }else if(op != undefined  && typeof op == type.function){
-                    op();
-                }
+                fun();
             } else {
                 setTimeout(function () { this.load(e, fun, op) }.bind(this), 1);
             }
         }
     });
+    
 
     jSymbolic.ext({
         len: function (l) {
@@ -590,19 +521,9 @@
             var attr = attr.split(/,|;/);
             var aryJSONstr = {};
             for (var at = 0; at < attr.length; at++) {
-                //var attrs = attr[at].split(/=|:/);
-                var attrs = function(a){
-                    var eqlind = a.indexOf("="), colind = a.indexOf(":");
-                    if((eqlind < colind && eqlind != -1) || (eqlind > -1 && colind == -1)){ // for = seperator
-                        return [a.substr(0,eqlind),a.substr(eqlind + 1)];
-                    }else if((colind < eqlind && colind != -1) || (colind > -1 && eqlind == -1)){
-                        return [a.substr(0,colind),a.substr(colind + 1)];
-                    }else{
-                        return [a];
-                    }
-                }(attr[at]);
+                var attrs = attr[at].split(/=|:/);
                 if(attrs.length == 1){
-                    if(!aryJSONstr.val) aryJSONstr.val = {};
+                    if(!aryJSONstr.val)aryJSONstr.val = {};
                     aryJSONstr.val[attrs[0]] = "";
                     continue;
                 }
@@ -635,6 +556,7 @@
                 fun.call(this, collection, 0, collection);
             }
         },
+        deepTrim: function(str){},
         setReturn: function(e, values){
             if(arguments.length != 2)throw "setReturn require 2 arguments";
             var i = 0, val = [], vl = {};
@@ -681,56 +603,6 @@
             }
         }
     });
-
-    /* Enter to Ajax */
-
-    jSymbolic.ext({
-        ajax : function(sel, op){
-            var op = this.obExt({
-                type : "GET",
-                url : "",
-                data : {},
-                dataType : "",
-                timeout : null,
-                success : null,
-                error : null
-            }, op);
-
-            var ajaxObj = (function(w){
-                var xObj = {
-                    type : 0,       // 1 is for XMLHttpRequest, 2 is for XDomainRequest
-                    ajax_ : null
-                };
-                if(w.XMLHttpRequest){
-                    xObj.type = 1;
-                    xObj.ajax_ = new XMLHttpRequest();
-                }else if(w.XDomainRequest){
-                    xObj.type = 2;
-                    xObj.ajax_ = new XDomainRequest();
-                }
-                return xObj;
-            })(window);
-
-            if(ajaxObj.type != 0 && ajaxObj.type == 1){ // for XMLHttpRequest
-                ajaxObj.ajax_.open(op.type, op.url);
-                ajaxObj.ajax_.onreadystatechange = function(resp){
-                    if(resp.currentTarget.readyState == 4){
-                        var response = resp.currentTarget.responseText;
-                        if(typeof response == type.string){}
-                        if(op.success) op.success(resp.currentTarget.responseText);
-                    }
-                }
-                ajaxObj.ajax_.onerror = function(resp){
-                    if(op.error) op.error(resp);
-                }
-                ajaxObj.ajax_.send(op.data ? op.data : null);
-            }
-            this.return = ajaxObj.ajax_; // setting original ajax object to return property
-        }
-    });
-
-    /* Enter to Ajax */
-
     jSymbolic.selectorBuilder = function (ctx, s) {
         var el = Sizzle(s, ctx);
         return el.length == 1 ? el[0] : el;/**/
@@ -857,14 +729,20 @@ Array.ext({
 });
 
 String.ext({
-    replaceAll : function(to, by){
-		for( var s = 0; s < this.length ; s++ ){
-			var str = this;
+    ms: function () {
+        this.str = [];
+        for (var x = 0; x < this.length; x++) { this.str.push(this[x]); }
+        return this.str = this.str.join("");
+    },
+	replaceAll : function(to, by){
+		this.ms();
+		for( var s = 0; s < this.str.length ; s++ ){
+			var str = this.str;
 			var rstr = str.replace(to, by);
 			this.str = rstr;
 			if( str == rstr ) break;
 		}
-		return this;
+		return this.str;
 	}
 });
 

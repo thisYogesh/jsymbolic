@@ -5,17 +5,15 @@
 		<script type="text/javascript" src="js/jSymbolic.js"></script>
         <script type="text/javascript">
 			$S(document,':)',function(){
-					$S('#d','+={click,0}',[
-						function(e){
-							var el = $S(this);
-							var op = el._('#{op}');
-							if(op == 'close'){
-								el._('#{op=open}')._('>.&{display:none}');
-							}else{
-								el._('#{op=close}')._('>.&{display:block}');
-							}
+					$S('#d','+={click}',function(e){
+						var el = $S(this);
+						var op = el._('#{op}');
+						if(op == 'close'){
+							el._('#{op=open}')._('>.&{display:none}');
+						}else{
+							el._('#{op=close}')._('>.&{display:block}');
 						}
-					])._('#{op=close}');
+					})._('#{op=close}');
 				}
 			);
 		</script>
@@ -26,12 +24,16 @@
                 margin-bottom:10px;
             }
             div {display: block;}
-            .anim{width: 100px;height: 100px;background: #000; float: left;}
+            .anim{width: 100px;height: 100px;background: #000; float: left;border: 1px solid #fff;}
         </style>
 	</head>
 <body>
     <h1 class="h" align="center">The jSymbolic</h1>
     <div class="anim"></div>
+    <div class="anim"></div>
+    <div class="anim"></div>
+    <div class="anim"></div>
+    <img src="" width="100px" height="100px"/>
     <div class="main" style="background:pink;" id="d">
         div
         <h1 style="background:hotpink;">
