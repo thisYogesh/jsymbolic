@@ -51,7 +51,7 @@
                     this.subCtx = [];
                 } else {
                     this.oldObject = true;
-                    this.return = null; // asign null to return, for when $S._ function initiate next time.
+                    this.return = null; // asign null to return, since when $S._ function initiate next time.
                     this.symbols = args[0];
                     this.op = args[1];
                 }
@@ -76,7 +76,7 @@
                 this.fn = a; // getting function set
                 var ele = this.getEle();
                 if(this.fn.symType == "udf"){ // for plugin
-                    this[this.fn.fun]();
+                    this[this.fn.fun](ele, this.op);
                 }else if(!this.fn.param){ // standalone symbol
                     if(!ele.length){
                         this[this.fn.fun](ele, this.fn.param, this.op);
@@ -177,14 +177,14 @@
 
     jSymbolic.ext({
         nxt: function (e) {
-            while(e.nextSibling.nodeType == 3 && typeof e.nextSibling.nodeType == type.number){
+            while(e.nextSibling && e.nextSibling.nodeType == 3){
                 e = e.nextSibling;
             }
             e = e.nextSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
         },
         prev: function (e) {
-            while(e.previousSibling.nodeType == 3 && typeof e.previousSibling.nodeType == type.number){
+            while(e.previousSibling && e.previousSibling.nodeType == 3){
                 e = e.previousSibling;
             }
             e = e.previousSibling;
@@ -305,10 +305,6 @@
             if (!this.IFC) this.subCtx.push(el); else return el;
         },
         ehtml: function(e, attr, obj){
-            /*attr = this.formateArg(attr, obj);
-            var html = this.htmlStr(e, "i"); // i is for to retrive innerHTML of element
-            attr = {innerHTML : html}
-            this.setReturn(e, attr);*/
             this.el(e, "innerHTML", obj);
         },
         IFC_: function (e, fun, sel, op) {
@@ -317,12 +313,9 @@
             this.IFC = false;
             return el;
         },
-        /*addSymbols: function (s) {
-            jSymbolic.fun.symToLogicMaping = [];
-            for (var i=0, i < s.length; i++) {
-                jSymbolic.fun.symToLogicMaping.push(s[i]);
-            }
-        },*/
+        val: function (e, prop, op) {
+            this.el(e, "value", op);
+        },
         el : function(e, prop, op){ // el function is used to retrive other than attributes and style properties
             prop = this.formateArg(prop, op);
             if(prop.val){
@@ -463,22 +456,27 @@
                 symbol : symbol,
                 symType : "udf"
             }
-            //jSymbolic.ext(symHandler.fun, fun);
-            jSymbolic.prototype[symHandler.fun] = function(){
-                this.pluginInit(fun);
+            jSymbolic.prototype[symHandler.fun] = function(e, op){
+                this.pluginInit(e, op, fun);
             }
             this.symToLogicMaping.push(symHandler); // adding symHandler object in symbol list
         },
-        pluginInit : function(fun){
-            //console.log(fun);
-            fun();
+        pluginInit : function(e, op, fun){
+            var pluginReturn = fun.call(e, op);
+            if(!(pluginReturn instanceof jSymbolic)){
+                var rObj = {};
+                rObj[this.fn.symbol] = pluginReturn;
+                this.setReturn(e, rObj);
+            }
         }
     });
 
     /* jSymbolic enter to plugin */
 
+    /* Heart of jSymbolic */
+
     jSymbolic.fun.symToLogicMaping = [
-        { fun: 'el', symbol: 'e', symType: 'opt'},                                          // return all properties of element 
+        { fun: 'el', symbol: 'e', symType: 'opt'},                                          // return properties of element 
         { fun: '$', symbol: '$', symType: 'function'},                                      // executable function
         { fun: '$each', symbol: '$*', symType: 'function'},                                 // executable function
         { fun: 'ehtml', symbol: '</>', symPara: 'MULTI', symType: 'opt'},                   // get innerHtml or outerHtml
@@ -505,6 +503,7 @@
         { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },     // remove CSS class
         { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                // bind event
         { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },                // unbind event
+        { fun: 'val', symbol: '%', symPara: 'MULTI', symType: 'opt'},                       // return value of input elements
         { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from 1 to end using index
         { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from last to first elements using index
         { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                  // manipulating html5's dataset
@@ -514,6 +513,8 @@
         { fun: 'ajax', symbol: '>X<', symPara: 'MULTI', symType: 'util'}                    // ajax (Asyncronus javascript and XML)
     ];
     
+    /* Heart of jSymbolic */
+
     /* jSymbolic exclusive load symbol  */
     jSymbolic.ext({
         load: function (e, fun, op) {
@@ -641,7 +642,7 @@
             !this.returnVal ? this.returnVal = [] : this.returnVal;
             if(this.returnVal.length == 0){
                 vl.el = e;
-                vl.val = values;
+                vl.return = values;
                 this.returnVal.push(vl);
             }else{
                 var r = new JSONs(this.returnVal).getValOf('el');
@@ -651,7 +652,7 @@
                         this.for(this.returnVal, function(a,b,c,loop){
                             this.forEach(a, function(x,y,z,loop1){
                                 if(y == 'el' && a.el == e){
-                                    a.val = new JSONs(a.val).join(values); // copy one json into another json
+                                    a.return = new JSONs(a.return).join(values); // copy one json into another json
                                     br = true;
                                 }
                                 if(br)loop1.break = true;
@@ -660,22 +661,18 @@
                         });
                     }else{ // else init freshly 
                         vl.el = e;
-                        vl.val = values;
+                        vl.return = values;
                         this.returnVal.push(vl);
                     }
                 });
             }
             if(this.returnVal.length == 1){
-                this.forEach(this.returnVal[0].val, function(a, b, c){
+                this.forEach(this.returnVal[0].return, function(a, b, c){
                     if(i > 1)Break=true;else i++;
                     val.push(a);
                 });
-                /*for(var prop in this.returnVal[0].val){
-                    if(i > 1)break;else i++;
-                    val.push(this.returnVal[0].val[prop]);
-                }*/
                 if(i==1) this.return = val[0];
-                else if(i > 1) this.return = this.returnVal[0].val;
+                else if(i > 1) this.return = this.returnVal[0].return;
             }else{
                 this.return = this.returnVal;
             }
