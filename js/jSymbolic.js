@@ -37,7 +37,7 @@
             symbols ? this.symbols = symbols : symbols;
             op ? this.op = op : op;
             var chsym = this.filterSymbols(sel); // check for utility symbol
-            if( chsym.length == 0 ){ // chsym.length == 0 i.e. selector is not associated with any symbols
+            if( chsym.length == 0 || this.mainCtx){ // chsym.length == 0 i.e. selector is not associated with any symbols
                 if (!this.mainCtx) { // fallback for next _js initialization
                     this.mainCtx = (function(sel){
                         var val;
