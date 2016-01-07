@@ -87,7 +87,18 @@ Hi all,
   > $S('selector','&{float:left;display:block}') // setting multiple style property to element
   > $S('selector','&{margin-left}') // getting margin left style property of element
   > $S('selector','&{float;display}') // getting multiple style property of element
-  
+
+## AJAX (*>X<*)
+  >
+```
+  > $S('>X<',{
+  >   type : 'GET',
+  >   url : 'https://www.googleapis.com/books/v1/volumes?fields=items&q=javascript',
+  >   success : function(resp){
+  >     console.log(resp)
+  >   }
+  > });
+
 ## How jSymbolic return result
   >
 ```
