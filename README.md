@@ -56,12 +56,35 @@ Hi all,
 
 ## Event Handeling
   >
-  **Event Binding**
+  **Event Binding** (*+=*)
 ```
   > $S('selector','+={click}',function(){
   >   alert('click fired!');
   > });
 ```
-  **Event Unbinding**
+  **Event Unbinding** (*-=*)
   ```
   > $S('selector','-={click}');
+
+## HTML5 Dataset (*#*)
+  >
+```
+  > $S('selector','#{id=E0}') // setting id in dataset
+  > var id = $S('selector','#{id}') // getting id from dataset
+  
+## Attribute Manipulation (*@*)
+  >
+```
+  > $S('selector','@{name=city}') // setting name attribute to element
+  > $S('selector','@{name=city,id=city01}') // setting multiple attribute to element
+  > $S('selector','@{name}') // getting name attribute of element
+  > $S('selector','@{name,id}') // getting multiple attribute of element
+  
+## CSS Manipulation (*&*)
+  >
+```
+  > $S('selector','&{float:left}') // setting float style property to element
+  > $S('selector','&{float:left;display:block}') // setting multiple style property to element
+  > $S('selector','&{margin-left}') // getting margin left style property of element
+  > $S('selector','&{float;display}') // getting multiple style property of element
+  
