@@ -88,3 +88,20 @@ Hi all,
   > $S('selector','&{margin-left}') // getting margin left style property of element
   > $S('selector','&{float;display}') // getting multiple style property of element
   
+## How jSymbolic return result
+  >
+```
+  > $S('selector','%') // here % sign used to get value from input field, lets see how it will return the result
+  > :: if selector return single element then
+  > $S('selector','%') // it will directly return value what is there in input field, as what we expect
+  > :: if we want to return multiple attributes of one element then
+  > $S('selector','@{name,id}') // result will be in JSON format like {name:'state',id:'SD12'}
+  > :: but what if selector return collection of element then
+  > $S('selector','@{name,id}') // result will be in Array of JSON like 
+  >                             //  [{
+  >                             //      el: input, 
+  >                             //      return: {name:'state1',id:'SD11'}
+  >                             //  },{
+  >                             //      el: input, 
+  >                             //      return: {name:'state2',id:'SD12'}
+  >                             //  }]
