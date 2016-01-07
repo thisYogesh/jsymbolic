@@ -97,11 +97,12 @@ Hi all,
   > :: if we want to return multiple attributes of one element then
   > $S('selector','@{name,id}') // result will be in JSON format like {name:'state',id:'SD12'}
   > :: but what if selector return collection of element then
-  > $S('selector','@{name,id}') // result will be in Array of JSON like 
-  >                             //  [{
-  >                             //      el: input, 
-  >                             //      return: {name:'state1',id:'SD11'}
-  >                             //  },{
-  >                             //      el: input, 
-  >                             //      return: {name:'state2',id:'SD12'}
-  >                             //  }]
+  > $S('selector','@{name,id}') /* result will be in Array of JSON like 
+  >                             *  [{
+  >                             *      el: input, 
+  >                             *      return: {name:'state1',id:'SD11'}
+  >                             *  },{
+  >                             *      el: input, 
+  >                             *      return: {name:'state2',id:'SD12'}
+  >                             *  }] 
+  >                             */
