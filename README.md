@@ -47,3 +47,9 @@ Hi all,
   > we can also write like 
   ```
   > ● $S('selector','>')._('<.^')._('?{span}')._('x');
+  
+## How to save object in variable and use them
+  >
+```
+  > var obj = $S('selector'); // you saving object into obj variable
+  > var val = obj._('%') // here you can apply symbols on saved object like this
