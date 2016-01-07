@@ -43,3 +43,7 @@ Hi all,
   > ● $S('selector','>.<.^.?{span}.x')
   > from main selector jSymbolic goto next element than preveious element
   > than goto parant element than find span within it and finally remove all span elements.
+  ```
+  > we can also write like 
+  ```
+  > ● $S('selector','>')._('<.^')._('?{span}')._('x');
