@@ -53,3 +53,15 @@ Hi all,
 ```
   > var obj = $S('selector'); // you saving object into obj variable
   > var val = obj._('%') // here you can apply symbols on saved object like this
+
+## Event Handeling
+  >
+  **Event Binding**
+```
+  > $S('selector','+={click}',function(){
+  >   alert('click fired!');
+  > });
+```
+  **Event Unbinding**
+  ```
+  > $S('selector','-={click}');
