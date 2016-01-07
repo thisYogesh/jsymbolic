@@ -88,6 +88,17 @@ Hi all,
   > $S('selector','&{margin-left}') // getting margin left style property of element
   > $S('selector','&{float;display}') // getting multiple style property of element
 
+## Create Plugins ( *(%)* )
+  > you can also define a new symbols
+```
+  > $S('(%)','Enter here your symbol', callback)
+  > lets create one symbol
+  > $S('(%)',';->', function(){
+  >   $S(this,'+={click}',function(){
+  >     alert(';->');
+  >   });
+  > });
+
 ## AJAX (*>X<*)
   >
 ```
