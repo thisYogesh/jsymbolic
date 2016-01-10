@@ -1,7 +1,6 @@
 /*
  * jSymbolic javaScript Library v1.0 Beta
  * Copyright 2016, Yogesh Jagdale
- * http://www.jsymbolic.com
  * 
  * Includes Sizzle.js (c) jQuery Foundation, Inc.
  * http://sizzlejs.com/
@@ -20,7 +19,7 @@
         splice : Array.prototype.splice
     };
     var jsEvent = []; // this variable used for jSymbolic event handeling tracking
-    var bool = {true: true, false: false};
+    var bool = {"true": true, "false": false};
     var udf = 0; // this variable used for jSymbolic user defined function
     var jSymbolic = function (sel, symbols, op) {
         var j = new jSymbolic.fun._(sel, symbols, op);
@@ -37,7 +36,7 @@
             symbols ? this.symbols = symbols : symbols;
             op ? this.op = op : op;
             var chsym = this.filterSymbols(sel); // check for utility symbol
-            if( chsym.length == 0 || this.mainCtx){ // chsym.length == 0 i.e. selector is not associated with any symbols
+            if( chsym.length == 0 || this.mainCtx ){ // chsym.length == 0 i.e. selector is not associated with any symbols
                 if (!this.mainCtx) { // fallback for next _js initialization
                     this.mainCtx = (function(sel){
                         var val;
@@ -50,13 +49,15 @@
                     })(sel);
                     this.subCtx = [];
                 } else {
-                    this.oldObject = true;
-                    this.return = null; // asign null to return, since when $S._ function initiate next time.
+                    this.oldObject = true; // asign true to .oldObject, to know that we are working on old object
+                    this.return = null; // asign null to .return, since when $S._ function initiate next time.
                     this.symbols = args[0];
                     this.op = args[1];
                 }
 
                 this.IFC = false; // Internal function calling
+                /*this.splice = [].splice;
+                this.length = 0;*/
                 this.symbols ? this.sym_to_fn() : this.symbols;
                 //this.splice = [].splice;
             }else if( chsym.length == 1 && chsym[0].symType == "util" ){ //chsym.length == 1 i.e. selector is associated with any one of symbols
@@ -121,10 +122,10 @@
         },
         filterSymbols : function(symbolStr, op){
             op = op || {};
-            var sData = this.symToLogicMaping;
-            var symbols = new JSONs(sData).getValOf("symbol");
-            var symbolicData = [];
-            var charData = {
+            var sData = this.symToLogicMaping,
+            //symbols = new JSONs(sData).getValOf("symbol"),
+            symbolicData = [],
+            charData = {
                 dot : 0,
                 LCB : "{",
                 RCB : "}"
@@ -135,14 +136,16 @@
                     sym += symbolStr[i];
                     i++;
                 }
-                for(var i2=0; i2<symbols.length; i2++){
-                    if(sym == symbols[i2]){
+                for(var i2=0; i2<sData.length; i2++){
+                    if(sym == sData[i2].symbol || (function(){ if(sData[i2].rgx == '1') return new RegExp(sData[i2].symbol).test(sym)})()){
+                    //if(sym == sData[i2].symbol){
                         var fndata = new JSONs.prototype.clone(sData[i2]);
                         symbolicData.push(fndata);
                         if( /\{/.test(symbolStr[i])){
                             var len = symbolStr.indexOf(charData.RCB, i) - i;
                             var param = symbolStr.substr(i + 1, len - 1);
                             if(op.hasOwnProperty(param))param = op[param];
+                            if(sData[i2].rgx == '1')symbolicData[symbolicData.length - 1].extra = sym;
                             symbolicData[symbolicData.length - 1].param = param;
                             i+=(len+1);
                         }
@@ -182,6 +185,7 @@
             }
             e = e.nextSibling;
             if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
+            //if (!this.IFC) e ? am.push.call(this, e) : e; else return e;
         },
         prev: function (e) {
             while(e.previousSibling && e.previousSibling.nodeType == 3){
@@ -268,7 +272,7 @@
             if(attr.val)this.getCSS(e, attr.val);
         },
         formateArg: function(args, obj){// used for to make arguments in to json object
-            if(typeof args != type.undefined){
+            if(typeof args != type.undefined && typeof args != type.object){
                 if ((args.indexOf('=') == -1 && args.indexOf(':') == -1) && typeof obj != type.undefined ){
                     args = obj[args];
                 }
@@ -416,7 +420,7 @@
                     eventName : "",
                     callback : "",
                     o_f : "off",
-                    bubbling : bool.false
+                    bubbling : false
                 }, evObj);
             }
             return evObj;
@@ -447,7 +451,7 @@
 
     /* dataset manipulation */
     
-    /* jSymbolic enter to plugin */
+    /* jSymbolic enter the plugin */
 
     jSymbolic.ext({
         plugin : function(symbol, fun){
@@ -471,9 +475,63 @@
         }
     });
 
-    /* jSymbolic enter to plugin */
+    /* jSymbolic enter the plugin */
 
-    /* Heart of jSymbolic */
+    /* jSymbolic enter the animation */
+
+    jSymbolic.ext({
+        anim : function(e, args, op){
+            var args = this.formateArg(args, op);
+            this.animate(e, args);
+        },
+        animate : function(e, args){
+            var fn = this.fn,
+            exrx = new RegExp(fn.symbol).exec(fn.extra),
+            duration = !exrx[1] ? 400 : exrx[1],
+            animProp = this.getDirection(e, args);//getting property to be animate
+
+            var frameCount = Math.abs(animProp.diff);
+            var frameTimeout = duration/frameCount;
+            this.startFrames({
+                frameTimeout : frameTimeout,
+                frameCount : frameCount,
+                incdec : animProp.diff > 0 ? '+' : '-',
+                el : e,
+                animProp : animProp,
+                incrementar : 0
+            }); //frameTimeout, frameCount, incdec, el, animProp, incrementar
+        },
+        getDirection : function(e, args){
+            var newVal = new JSONs.prototype.clone(args), diffmap;
+            this.IFC = true;
+            diffmap = this.getCSS(e, args);
+            this.IFC = false;
+            for(var prop in diffmap){
+                diffmap[prop] = Number(diffmap[prop].match(/\d+/)[0]);
+                var mv = diffmap[prop] ? Number(diffmap[prop]) : 0, // mainvalue
+                diff = Number(newVal[prop]) - mv; // difference to be maintain
+                diffmap.diff = diff;    // saving difference
+                diffmap.prop = prop;    // saving property
+            }
+            return diffmap;
+        },
+        startFrames : function( op ){ //{ frameTimeout, frameCount, incdec, el, animProp, incrementar }
+            var animator = setInterval(function(){
+                if(op.incdec == '+'){
+                    op.animProp[op.animProp.prop] += 1;
+                    op.incrementar += 1;
+                    $S(op.el,'&{'+ op.animProp.prop +'='+ op.animProp[op.animProp.prop] +'px}');
+                }else if(op.incdec == '-'){
+
+                }
+                if(op.incrementar == op.frameCount) clearInterval(animator);
+            },op.frameTimeout);
+        }
+    });
+
+    /* jSymbolic enter the animation */
+
+    /* ♥ Heart Of jSymbolic ♥ */
 
     jSymbolic.fun.symToLogicMaping = [
         { fun: 'el', symbol: 'e', symType: 'opt'},                                          // return properties of element 
@@ -504,18 +562,20 @@
         { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                // bind event
         { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },                // unbind event
         { fun: 'val', symbol: '%', symPara: 'MULTI', symType: 'opt'},                       // return value of input elements
-        { fun: 'fst_by_indx', symbol: '>Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from 1 to end using index
-        { fun: 'lst_by_indx', symbol: '<Rx{\d+}', symPara: 'MONO-MULTI', symType: 'opt' },  // finding elements from last to first elements using index
+        { fun: 'fst_by_indx', symbol: '^!\\d+$', symPara: 'MONO-MULTI', symType: 'opt' },   // finding elements from 1 to end using index
+        { fun: 'lst_by_indx', symbol: '^!\\d+$', symPara: 'MONO-MULTI', symType: 'opt' },   // finding elements from last to first elements using index
         { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                  // manipulating html5's dataset
         { fun: 'text', symbol: ',', symType: 'opt' },                                       // retrive text from element
         { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' },                    // jSymbolic exclusive symbol for DOM load event
-        { fun : 'plugin', symbol: '(%)', symPara: 'MULTI', symType: 'util'},                // add plugin
-        { fun: 'ajax', symbol: '>X<', symPara: 'MULTI', symType: 'util'}                    // ajax (Asyncronus javascript and XML)
+        { fun: 'plugin', symbol: '=>', symPara: 'MULTI', symType: 'util'},                 // add plugin
+        { fun: 'ajax', symbol: '>X<', symPara: 'MULTI', symType: 'util'},                   // ajax (Asyncronus javascript and XML)
+        { fun: 'anim', symbol: '^=(\\d+)?$', symPara: 'MULTI', symType: 'opt', rgx: '1'}    // animation
     ];
-    
-    /* Heart of jSymbolic */
+
+    /* ♥ Heart Of jSymbolic ♥ */
 
     /* jSymbolic exclusive load symbol  */
+
     jSymbolic.ext({
         load: function (e, fun, op) {
             if (document.body || document.readyState == 'complete') {
@@ -582,10 +642,12 @@
             }
         },
         getCSS: function(e, css){
+            var cCss = window.getComputedStyle(e);// getting computed css
             for(var prop in css){
-                css[prop] = e.style[prop];
+                //css[prop] = e.style[prop];
+                css[prop] = cCss[prop];
             }
-            this.setReturn(e, css);
+            if(!this.IFC)this.setReturn(e, css);else return css;
         },
         mkAttrStr_to_JSON: function (attr) {// making attribute : value pairs
             var attr = attr.split(/,|;/);
