@@ -11,15 +11,15 @@ Hi all,
   
 ## jSymbolic Overview
 
-  > As the name suggested 'jSymbolic' it comes with some 
+  > As the name suggested **jSymbolic** it comes with some 
   > intresting symbols insted of function name are as like below.
   ```
   > ● Document Load Event       :)
   > ● Next Sibling              >
   > ● Previous Sibling          <
-  > ● Parant Element            ^
+  > ● Parent Element            ^
   > ● Find in DOM               ?
-  > ● Remove Element            x     etc....
+  > ● Remove Element            x     and so on many symbols....
   
 ## How To Use symbols?
 
