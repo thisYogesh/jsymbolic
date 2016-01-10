@@ -44,14 +44,14 @@ Hi all,
   > from main selector jSymbolic goto next element than preveious element
   > than goto parant element than find span within it and finally remove all span elements.
   ```
-  > we can also write like 
+  > we can also write as below 
   ```
   > ● $S('selector','>')._('<.^')._('?{span}')._('x');
   
 ## How to save object in variable and use them
   >
 ```
-  > var obj = $S('selector'); // you saving object into obj variable
+  > var obj = $S('selector'); // you saving jSymbolic Object into obj variable
   > var val = obj._('%') // here you can apply symbols on saved object like this
 
 ## Event Handeling
@@ -88,12 +88,12 @@ Hi all,
   > $S('selector','&{margin-left}') // getting margin left style property of element
   > $S('selector','&{float;display}') // getting multiple style property of element
 
-## Create Plugins ( *(%)* )
+## Create Plugins ( *=>* )
   > you can also define a new symbols
 ```
-  > $S('(%)','Enter here your symbol', callback)
+  > $S('=>','Enter here your symbol', callback)
   > lets create one symbol
-  > $S('(%)',';->', function(){
+  > $S('=>',';->', function(){
   >   $S(this,'+={click}',function(){
   >     alert(';->');
   >   });
@@ -104,7 +104,7 @@ Hi all,
   >
   > Here I want to give you one more loveable example
   > In this exmple I will append 'I Love jSymbolic' text in given selector
-  > $S('(%)','♥',function(){
+  > $S('=>','♥',function(){
   >   $S(this,'>+{I Love jSymbolic}'); // here '>+' symbol is used for to append functionality
   > });
   > $S('selector','♥') // after you execute this, you will get to see appended text in your targeted selector
