@@ -1,5 +1,5 @@
-# jsymbolic
-jSymbolic javaScript Symbolic Library :)
+# jSymbolic
+jSymbolic javaScript Library :)
 
 Hi all, 
   > jSymbolic comes with a new way to manipulate your DOM.
