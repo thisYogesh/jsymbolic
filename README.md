@@ -98,6 +98,16 @@ Hi all,
   >     alert(';->');
   >   });
   > });
+  >
+  > use this symbol on selector as below
+  > $S('selector',';->') // now when you click on element you will get an alert;
+  >
+  > Here I want to give you one more loveable example
+  > In this exmple I will append 'I Love jSymbolic' text in given selector
+  > $S('(%)','♥',function(){
+  >   $S(this,'>+{I Love jSymbolic}'); // here '>+' symbol is used for to append functionality
+  > });
+  > $S('selector','♥') // after you execute this, you will get to see appended text in your targeted selector
 
 ## AJAX (*>X<*)
   >
