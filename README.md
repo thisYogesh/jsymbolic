@@ -41,8 +41,8 @@ Hi all,
   > Here we can also use symbols like that
   ```
   > ● $S('selector','>.<.^.?{span}.x')
-  > from main selector jSymbolic goto next element than preveious element
-  > than goto parant element than find span within it and finally remove all span elements.
+  > from main selector jSymbolic goto next element then preveious element
+  > then goto parant element then find span within it and finally remove all span elements.
   ```
   > we can also write as below 
   ```
