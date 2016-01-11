@@ -3,7 +3,7 @@ jSymbolic javaScript Library :)  *Beta*
 
 Hi all, 
   > jSymbolic comes with a new way to manipulate your DOM.
-  > The main intention beyond this library creation is just my fun!....
+  > The main intention behind this library creation is just my fun!....
     hope you will also enjoy this symbolic driven jSymbolic-javaScript Library
 
   > So lets take a look at jSymbolic
