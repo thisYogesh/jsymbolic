@@ -1,6 +1,7 @@
 /*
  * jSymbolic javaScript Library v1.0 Beta
  * Copyright 2016, Yogesh Jagdale
+ * http://www.jsymbolic.com
  * 
  * Includes Sizzle.js (c) jQuery Foundation, Inc.
  * http://sizzlejs.com/
