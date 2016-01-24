@@ -40,8 +40,10 @@ Hi all,
     // fun().fun1().func2() .... 
   > Here we can also use symbols like that
   ```
-  > ● $S('selector','>.<.^.?{span}.x')
-  > from main selector jSymbolic goto next element then preveious element
+  > ● $S(document,':)',function(){
+  >       $S('selector','>.<.^.?{span}.x') 
+  >   });
+  > after loading document from main selector jSymbolic goto next element then preveious element
   > then goto parant element then find span within it and finally remove all span elements.
   ```
   > we can also write as below 
