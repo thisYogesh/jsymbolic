@@ -37,6 +37,8 @@
             symbols ? this.symbols = symbols : symbols;
             op ? this.op = op : op;
             var chsym = this.filterSymbols(sel); // check for utility symbol
+            this.splice = [].splice;
+            this.length = 0;
             if( chsym.length == 0 || this.mainCtx ){ // chsym.length == 0 i.e. selector is not associated with any symbols
                 if (!this.mainCtx) { // fallback for next _js initialization
                     this.mainCtx = (function(sel){
@@ -57,8 +59,6 @@
                 }
 
                 this.IFC = false; // Internal function calling
-                /*this.splice = [].splice;
-                this.length = 0;*/
                 this.symbols ? this.sym_to_fn() : this.symbols;
                 //this.splice = [].splice;
             }else if( chsym.length == 1 && chsym[0].symType == "util" ){ //chsym.length == 1 i.e. selector is associated with any one of symbols
@@ -68,6 +68,17 @@
                     this.ajax(this.symbols, this.op);
                 }else if(chsym[0].fun == "plugin"){ // for plugin
                     this.plugin(this.symbols, this.op);
+                }
+            }
+            if(!this.return){
+                var currentContext = this.getEle();
+                if(this.length > 0) am.splice.call(this,0); // remove the elements if there any
+                if(currentContext.length > 0){
+                    this.for(currentContext, function(a,b,c,d){
+                        am.push.call(this, a);
+                    });
+                }else if(currentContext.nodeType){
+                    am.push.call(this, currentContext);
                 }
             }
             return this.oldObject ? this.return ? this.return : this : this;
@@ -120,6 +131,7 @@
         },
         getEle : function(){
             return this.subCtx.length == 0 ? this.mainCtx : this.subCtx.last();
+            //return this.length == 0 ? this[0] : Array.prototype.last(this);
         },
         filterSymbols : function(symbolStr, op){
             op = op || {};
