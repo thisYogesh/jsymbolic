@@ -57,10 +57,8 @@
                     this.symbols = args[0];
                     this.op = args[1];
                 }
-
                 this.IFC = false; // Internal function calling
                 this.symbols ? this.sym_to_fn() : this.symbols;
-                //this.splice = [].splice;
             }else if( chsym.length == 1 && chsym[0].symType == "util" ){ //chsym.length == 1 i.e. selector is associated with any one of symbols
                 if(chsym[0].fun == "ajax"){ // for ajax
                     this.op = this.symbols;
