@@ -39,6 +39,7 @@
             var chsym = this.filterSymbols(sel); // check for utility symbol
             this.splice = [].splice;
             this.length = 0;
+            !this.mainCtx ? this.subCtx = [] : this.subCtx;
             if( chsym.length == 0 || this.mainCtx ){ // chsym.length == 0 i.e. selector is not associated with any symbols
                 if (!this.mainCtx) { // fallback for next _js initialization
                     this.mainCtx = (function(sel){
@@ -50,15 +51,16 @@
                         }
                         return val;
                     })(sel);
-                    this.subCtx = [];
                 } else {
                     this.oldObject = true; // asign true to .oldObject, to know that we are working on old object
                     this.return = null; // asign null to .return, since when $S._ function initiate next time.
                     this.symbols = args[0];
                     this.op = args[1];
                 }
+
                 this.IFC = false; // Internal function calling
                 this.symbols ? this.sym_to_fn() : this.symbols;
+                //this.splice = [].splice;
             }else if( chsym.length == 1 && chsym[0].symType == "util" ){ //chsym.length == 1 i.e. selector is associated with any one of symbols
                 if(chsym[0].fun == "ajax"){ // for ajax
                     this.op = this.symbols;
@@ -66,6 +68,8 @@
                     this.ajax(this.symbols, this.op);
                 }else if(chsym[0].fun == "plugin"){ // for plugin
                     this.plugin(this.symbols, this.op);
+                }else if(chsym[0].fun == "createEle"){
+                    this.createEle(this.symbols, this.op);
                 }
             }
             if(!this.return){
@@ -99,7 +103,8 @@
                                 this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
                             }
                             this.IFC = false;
-                            if(el.length > 0) this.subCtx.push(el.clean());
+
+                            if(el.length > 0) this.setCtx(el.clean());
                         }else if(this.fn.symType == "rctx"){
                             this[this.fn.fun]();
                         }
@@ -119,7 +124,11 @@
                                 }
                             }
                             this.IFC = false;
-                            if(el.length > 0) this.subCtx.push(el.clean());
+                            if(el.length > 0) {
+                                el.clean();
+                                el = this.cleanObject(el);
+                                this.setCtx(el);
+                            }
                         }
                     }else if(this.fn.symType == "function"){
                         this[this.fn.fun](ele, this.fn.param, this.op);
@@ -127,9 +136,30 @@
                 }
             });
         },
+        cleanObject : function(obj){
+            var a= [],cf = false;
+            for(var i=0; i<obj.length; i++){
+                if(obj[i].length){
+                    for(var c=0; c<obj[i].length; c++){
+                        if(obj[i][c].length){
+                            cf = true;
+                            a.push(this.cleanObject(obj[i][c]));
+                        }else{
+                            a.push(obj[i][c])
+                        }
+                    }
+                }else{
+                    a.push(obj[i]);
+                }
+            }
+            if(cf) a= this.cleanObject(a);
+            return a;
+        },
         getEle : function(){
             return this.subCtx.length == 0 ? this.mainCtx : this.subCtx.last();
-            //return this.length == 0 ? this[0] : Array.prototype.last(this);
+        },
+        setCtx : function(e){
+            !this.mainCtx ? this.mainCtx = e : this.subCtx.push(e);
         },
         filterSymbols : function(symbolStr, op){
             op = op || {};
@@ -195,7 +225,7 @@
                 e = e.nextSibling;
             }
             e = e.nextSibling;
-            if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
+            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
             //if (!this.IFC) e ? am.push.call(this, e) : e; else return e;
         },
         prev: function (e) {
@@ -203,33 +233,33 @@
                 e = e.previousSibling;
             }
             e = e.previousSibling;
-            if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
+            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
         },
         parent: function (e) {
             e = e.parentNode;
-            if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
+            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
         },
         childs: function (e) {
             e = e.children;
-            if (!this.IFC) e ? this.subCtx.push(e) : e; else return e;
+            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
         },
         find: function (e, sel) {
             e = jSymbolic.selectorBuilder(e, sel);
-            if (!this.IFC) e.length > 0 || e.nodeType ? this.subCtx.push(e) : e; else return e;
+            if (!this.IFC) e.length > 0 || e.nodeType ? this.setCtx(e) : e; else return e;
         },
 		indx: function(el, indx){
 			indx = Number(indx);
-			this.subCtx.push(el[indx]);
+			this.setCtx(el[indx]);
 		},
         fst_by_indx: function (coll, indx) {
-            if (!this.IFC) this.subCtx.push(coll[indx - 1]); else return coll[indx - 1];
+            if (!this.IFC) this.setCtx(coll[indx - 1]); else return coll[indx - 1];
         },
         lst_by_indx: function (coll, indx) {
-            if (!this.IFC) this.subCtx.push(coll[coll.length - indx]); else return coll[coll.length - indx];
+            if (!this.IFC) this.setCtx(coll[coll.length - indx]); else return coll[coll.length - indx];
         },
         append: function (e, tempVar) {         // building append function
             var cont = tempVar;
-            var newEle = this.strToHtml(cont);
+            var newEle = (cont.nodeType || cont instanceof jSymbolic) ? cont : this.strToHtml(cont);
             this.apnd(e, newEle);
         },
         prepend: function (e, tempVar) {
@@ -259,7 +289,7 @@
                     if (a != e) ele.push(a);
                 });
             }
-            if (!this.IFC) this.subCtx.push(ele); else return ele;
+            if (!this.IFC) this.setCtx(ele); else return ele;
         },
         reduceCtx: function (e, len) {
             if (len != 'x') {// provide 'x' symbol to the function to clean contaxt
@@ -317,7 +347,7 @@
         clone: function (e) {
             var elStr = e.outerHTML;
             var el = this.strToHtml(elStr)[0];
-            if (!this.IFC) this.subCtx.push(el); else return el;
+            if (!this.IFC) this.setCtx(el); else return el;
         },
         ehtml: function(e, attr, obj){
             this.el(e, "innerHTML", obj);
@@ -330,6 +360,12 @@
         },
         val: function (e, prop, op) {
             this.el(e, "value", op);
+        },
+        createEle : function(htmlStr){
+            var el = this.strToHtml(htmlStr);
+            if(el.length > 0){
+                this.setCtx(el)
+            }
         },
         el : function(e, prop, op){ // el function is used to retrive other than attributes and style properties
             prop = this.formateArg(prop, op);
@@ -578,9 +614,10 @@
         { fun: 'dataset', symbol: '#', symPara: 'MULTI', symType: 'opt' },                  // manipulating html5's dataset
         { fun: 'text', symbol: ',', symType: 'opt' },                                       // retrive text from element
         { fun: 'load', symbol: ':)', symPara: 'MULTI', symType: 'opt' },                    // jSymbolic exclusive symbol for DOM load event
-        { fun: 'plugin', symbol: '=>', symPara: 'MULTI', symType: 'util'},                 // add plugin
+        { fun: 'plugin', symbol: '=>', symPara: 'MULTI', symType: 'util'},                  // add plugin
         { fun: 'ajax', symbol: '>X<', symPara: 'MULTI', symType: 'util'},                   // ajax (Asyncronus javascript and XML)
-        { fun: 'anim', symbol: '^=(\\d+)?$', symPara: 'MULTI', symType: 'opt', rgx: '1'}    // animation
+        { fun: 'anim', symbol: '^=(\\d+)?$', symPara: 'MULTI', symType: 'opt', rgx: '1'},   // animation
+        { fun: 'createEle', symbol: '<->', symPara: 'MULTI', symType: 'util'}               // create HTML element
     ];
 
     /* ♥ Heart Of jSymbolic ♥ */
@@ -619,8 +656,18 @@
             return dumy.childNodes;
         },
         apnd: function (e, newEle) {
-            e.appendChild(newEle[0]);
-            newEle[0] ? newEle[0].nodeType ? this.apnd(e, newEle) : true : true;
+            if(newEle.nodeType){
+                e.appendChild(newEle);
+            }else{
+                if(newEle instanceof NodeList){
+                    e.appendChild(newEle[0]);
+                    newEle[0] ? newEle[0].nodeType ? this.apnd(e, newEle) : true : true;
+                }else{
+                    for(var el=0; el < newEle.length; el++){
+                        e.appendChild(newEle[el])
+                    }
+                }
+            }
         },
         prnd: function (e, newEle) {
             e.parentNode.insertBefore(newEle[0], e);
