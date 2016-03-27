@@ -1,13 +1,14 @@
 <!DOCTYPE html>		
 <html>
 	<head>
-		<!--script type="text/javascript" src="js/jquery-1.11.1.js"></script-->
-		<script type="text/javascript" src="js/jSymbolic_variable.js"></script>
+		<script type="text/javascript" src="js/jquery-1.11.1.js"></script>
+		<!--script type="text/javascript" src="js/jSymbolic_variable.js"></script-->
+        <script type="text/javascript" src="js/jSymbolic.js"></script>
         <script type="text/javascript">
 			$S(document,':)',function(){
 					$S('#d','+={click}',function(e){
 						var el = $S(this);
-						var op = el._('#{op}');
+                        var op = el._('#{op}');
 						if(op == 'close'){
 							el._('#{op=open}')._('>.&{display:none}');
 						}else{
