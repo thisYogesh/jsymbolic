@@ -49,11 +49,12 @@
                         }else{
                             val = sel;
                         }
+                        this.setCtx(val);
                         return val;
-                    })(sel);
+                    }.bind(this))(sel);
                 } else {
                     this.oldObject = true; // asign true to .oldObject, to know that we are working on old object
-                    this.return = null; // asign null to .return, since when $S._ function initiate next time.
+                    this.return = undefined; // asign null to .return, since when $S._ function initiate next time.
                     this.symbols = args[0];
                     this.op = args[1];
                 }
@@ -72,18 +73,7 @@
                     this.createEle(this.symbols, this.op);
                 }
             }
-            if(!this.return){
-                var currentContext = this.getEle();
-                if(this.length > 0) am.splice.call(this,0); // remove the elements if there any
-                if(currentContext.length > 0){
-                    this.for(currentContext, function(a,b,c,d){
-                        am.push.call(this, a);
-                    });
-                }else if(currentContext.nodeType){
-                    am.push.call(this, currentContext);
-                }
-            }
-            return this.oldObject ? this.return ? this.return : this : this;
+            return this.oldObject ? this.return != undefined ? this.return : this : this;
         },
         sym_to_fn: function () {
             var fn = this.filterSymbols(this.symbols, this.op);
@@ -100,11 +90,32 @@
                         if(this.fn.symType != "rctx"){
                             this.fn.symType == "context" ? this.IFC = true : this.IFC;
                             for( var x = 0; x < ele.length; x++ ){
-                                this.IFC ? el.push(this[this.fn.fun](ele[x])) : this[this.fn.fun](ele[x]);
+                                if(this.IFC) {
+                                        var elm = this[this.fn.fun](ele[x], this.fn.param, this.op);
+                                        if(elm.length > 0){
+                                            elm = this.cleanObject(elm);
+                                            for(var i=0; i<elm.length; i++){
+                                                if(el.indexOf(elm[i]) == -1){
+                                                    el.push(elm[i]);
+                                                }
+                                            }
+                                        }else{
+                                            if(el.indexOf(elm) == -1){
+                                                el.push(elm);
+                                            }
+                                        }
+                                    }else{
+                                        this[this.fn.fun](ele[x],this.fn.param, this.op);
+                                    }
                             }
                             this.IFC = false;
 
-                            if(el.length > 0) this.setCtx(el.clean());
+                            //if(el.length > 0) this.setCtx(el.clean());
+                            if(el.length > 0) {
+                                el = el.clean();
+                                el = this.cleanObject(el);
+                                this.setCtx(el);
+                            }
                         }else if(this.fn.symType == "rctx"){
                             this[this.fn.fun]();
                         }
@@ -120,12 +131,28 @@
                                 this[this.fn.fun](ele, this.fn.param, this.op);
                             }else{
                                 for( var x = 0; x < ele.length; x++ ){
-                                    this.IFC ? el.push(this[this.fn.fun](ele[x], this.fn.param, this.op)) :this[this.fn.fun](ele[x],this.fn.param, this.op);
+                                    if(this.IFC) {
+                                        var elm = this[this.fn.fun](ele[x], this.fn.param, this.op);
+                                        if(elm.length > 0){
+                                            elm = this.cleanObject(elm);
+                                            for(var i=0; i<elm.length; i++){
+                                                if(el.indexOf(elm[i]) == -1){
+                                                    el.push(elm[i]);
+                                                }
+                                            }
+                                        }else{
+                                            if(el.indexOf(elm) == -1){
+                                                el.push(elm);
+                                            }
+                                        }
+                                    }else{
+                                        this[this.fn.fun](ele[x],this.fn.param, this.op);
+                                    }
                                 }
                             }
                             this.IFC = false;
                             if(el.length > 0) {
-                                el.clean();
+                                el = el.clean();
                                 el = this.cleanObject(el);
                                 this.setCtx(el);
                             }
@@ -139,9 +166,9 @@
         cleanObject : function(obj){
             var a= [],cf = false;
             for(var i=0; i<obj.length; i++){
-                if(obj[i].length){
+                if(obj[i] instanceof Array){
                     for(var c=0; c<obj[i].length; c++){
-                        if(obj[i][c].length){
+                        if(obj[i][c] instanceof Array){
                             cf = true;
                             a.push(this.cleanObject(obj[i][c]));
                         }else{
@@ -159,7 +186,26 @@
             return this.subCtx.length == 0 ? this.mainCtx : this.subCtx.last();
         },
         setCtx : function(e){
+            if(e)
             !this.mainCtx ? this.mainCtx = e : this.subCtx.push(e);
+
+            if(e.nodeType){
+                while(this.length != 0){
+                    Array.prototype.pop.call(this);
+                }
+                Array.prototype.push.call(this,e);
+            }else if(e.length > 0){
+                while(this.length != 0){
+                    Array.prototype.pop.call(this);
+                }
+                for(var i=0; i < e.length; i++){
+                    Array.prototype.push.call(this, e[i]);
+                }
+            }else {
+                while(this.length != 0){
+                    Array.prototype.pop.call(this);
+                }
+            }
         },
         filterSymbols : function(symbolStr, op){
             op = op || {};
@@ -179,7 +225,6 @@
                 }
                 for(var i2=0; i2<sData.length; i2++){
                     if(sym == sData[i2].symbol || (function(){ if(sData[i2].rgx == '1') return new RegExp(sData[i2].symbol).test(sym)})()){
-                    //if(sym == sData[i2].symbol){
                         var fndata = new JSONs.prototype.clone(sData[i2]);
                         symbolicData.push(fndata);
                         if( /\{/.test(symbolStr[i])){
@@ -225,8 +270,7 @@
                 e = e.nextSibling;
             }
             e = e.nextSibling;
-            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
-            //if (!this.IFC) e ? am.push.call(this, e) : e; else return e;
+            if (!this.IFC) this.setCtx(e); else return e;
         },
         prev: function (e) {
             while(e.previousSibling && e.previousSibling.nodeType == 3){
@@ -239,13 +283,54 @@
             e = e.parentNode;
             if (!this.IFC) e ? this.setCtx(e) : e; else return e;
         },
+        cloParent: function(e, args, op){
+            //args = this.formateArg(args, op);
+            var toCompare = args,
+            el = e,
+            selectorType = function(){
+                var c = args.substr(0,1);
+                if(c == "#") {
+                    toCompare = toCompare.substr(1);
+                    return "Id";
+                }
+                else if(c == ".") {
+                    toCompare = toCompare.substr(1);
+                    return "Class";
+                }
+                else return "Node";
+            }(),
+            found = true;
+            if(selectorType == "Id"){
+                this.IFC = true;
+                var p;
+                while(found){
+                    p = el = this.parent(el);
+                    if(p && p.nodeType == 1){
+                        var id = this.getAttr(p, {id:""}).id;
+                        if(id == toCompare){
+                            found = false;
+                        }
+                    }else{
+                        break;
+                    }
+                }
+                this.IFC = false;
+                if(!found){
+                    this.setCtx(p);
+                };
+            }else if(selectorType == "Class"){
+
+            }else if(selectorType == "Node"){
+
+            }
+        },
         childs: function (e) {
             e = e.children;
-            if (!this.IFC) e ? this.setCtx(e) : e; else return e;
+            if (!this.IFC) this.setCtx(e); else return e;
         },
         find: function (e, sel) {
             e = jSymbolic.selectorBuilder(e, sel);
-            if (!this.IFC) e.length > 0 || e.nodeType ? this.setCtx(e) : e; else return e;
+            if (!this.IFC) this.setCtx(e); else return e;
         },
 		indx: function(el, indx){
 			indx = Number(indx);
@@ -274,8 +359,8 @@
         },
         after: function (e, tempVar) {
             var cont = tempVar;
-            var newEle = this.strToHtml(cont);
-            if (e.nextSibling.nodeType) this.prnd(e.nextSibling, newEle);
+            var newEle = (cont.nodeType || cont instanceof jSymbolic) ? cont : this.strToHtml(cont);
+            if (e.nextSibling) this.prnd(e.nextSibling, newEle);
             else this.apnd(e.parentNode, newEle);
         },
         text: function(e, args, op){
@@ -297,6 +382,19 @@
                 len = len > this.subCtx.length ? 0 : len;
             } else len = this.subCtx.length;
             if (this.subCtx) this.subCtx.splice(this.subCtx.length - len);
+            var cx = this.getEle();
+            // cleaning context
+            while(this.length != 0){
+                Array.prototype.pop.call(this);
+            }
+            
+            if(cx.length){
+                for(var i=0; i<cx.length; i++){
+                    Array.prototype.push.call(this,cx[i]);
+                }
+            }else{
+                Array.prototype.push.call(this,cx);
+            }
         },
         attr: function (e, attr, obj) {
             attr = this.formateArg(attr, obj);
@@ -341,6 +439,15 @@
                 e.className = svc.join(' ');
             }
         },
+        _hClass : function(e, args, op){
+            var classess = $S(e, "@{class}");
+            classess = classess ? classess.split(" ") : [];
+            if(classess.indexOf(args.trim()) > -1){
+                this.setReturn(e, { hasClass:true });
+            }else{
+                this.setReturn(e, { hasClass:false });
+            }
+        },
         remove: function (e) {
             e.remove();
         },
@@ -364,16 +471,20 @@
         createEle : function(htmlStr){
             var el = this.strToHtml(htmlStr);
             if(el.length > 0){
-                this.setCtx(el)
+                this.setCtx(el);
             }
         },
         el : function(e, prop, op){ // el function is used to retrive other than attributes and style properties
             prop = this.formateArg(prop, op);
             if(prop.val){
                 this.forEach(prop.val, function(a,b,c,d){
-                    c[b] = e[b];  //e[b] : putting value in.
+                    c[b] = e[b];  //getting value from e[b] and putting in c[b].
                 });
                 this.setReturn(e, prop.val);
+            }else if(prop){
+                this.forEach(prop, function(a,b,c,d){
+                    e[b] = eval(c[b]);
+                });
             }
         },
         $ : function(e, fun){
@@ -588,6 +699,7 @@
         { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                   // next
         { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                  // previous
         { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                // parent
+        { fun: 'cloParent', symbol: '^^', symPara: 'MULTI', symType: 'context' },            // finding closest parent
         { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                   // after
         { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                  // before
         { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                 // find
@@ -606,6 +718,7 @@
         { fun: 'css', symbol: '&', symPara: 'MULTI', symType: 'opt' },                      // CSS
         { fun: '_class', symbol: '&+', symPara: 'MULTI', symType: 'opt', symFor: '+' },     // add CSS class
         { fun: '_class', symbol: '&x', symPara: 'MULTI', symType: 'opt', symFor: 'x' },     // remove CSS class
+        { fun: '_hClass', symbol: '&h', symPara: 'MULTI', symType: 'opt' },                 // check has class
         { fun: 'symEvent', symbol: '+=', symPara: 'MULTI', symType: 'opt' },                // bind event
         { fun: 'symEvent', symbol: '-=', symPara: 'MULTI', symType: 'opt' },                // unbind event
         { fun: 'val', symbol: '%', symPara: 'MULTI', symType: 'opt'},                       // return value of input elements
@@ -686,7 +799,8 @@
                     }
                 });
             });
-            this.setReturn(e, attr);
+            if(!this.IFC) this.setReturn(e, attr)
+            else return attr;
         },
         removeAttr: function (e, attr) {
             this.forEach(attr.val, function(a,b){
@@ -890,9 +1004,7 @@ JSONs.prototype.getValOf = function(key) {
     return v;
 }
 JSONs.prototype.getKeys = function(obj) {
-    var k=[];
-    for (var i in obj) { k.push(i) }
-    return k;
+    return Object.keys(obj);
 }
 JSONs.prototype.clone = function(obj){
     var clone = {};
@@ -955,7 +1067,7 @@ Array.ext({
     clean : function () {
 		var a=[];
         for (var x = 0; x < this.length; x++) {
-			if( this[x] != "" && this[x] != null && this[x] != undefined ){
+			if( this[x] != "" && this[x] != null && this[x] != undefined && this[x].length != 0){
 				a.push(this[x]);
 			}
         }
