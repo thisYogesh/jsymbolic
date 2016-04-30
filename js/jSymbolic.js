@@ -19,6 +19,7 @@
         push : Array.prototype.push,
         splice : Array.prototype.splice
     };
+    var qTxt = /^("|')((\w|\W|\@|\.|\#)+)?("|')$/;
     var jsEvent = []; // this variable used for jSymbolic event handeling tracking
     var bool = {"true": true, "false": false};
     var udf = 0; // this variable used for jSymbolic user defined function
@@ -349,13 +350,14 @@
         },
         prepend: function (e, tempVar) {
             var cont = tempVar;
-            var newEle = this.strToHtml(cont);
-            e.childNodes[0] ? this.prnd(e.childNodes[0], newEle) : this.apnd(e, newEle);
+            var newEle = (cont.nodeType || cont instanceof jSymbolic) ? cont : this.strToHtml(cont);
+            this.prnd(e, newEle);
         },
         before: function (e, tempVar) {
             var cont = tempVar;
-            var newEle = this.strToHtml(cont);
-            this.prnd(e, newEle);
+            var newEle = (cont.nodeType || cont instanceof jSymbolic) ? cont : this.strToHtml(cont);
+            if (e.previousSibling) this.prnd(e.previousSibling, newEle);
+            else this.prnd(e, newEle);
         },
         after: function (e, tempVar) {
             var cont = tempVar;
@@ -483,7 +485,8 @@
                 this.setReturn(e, prop.val);
             }else if(prop){
                 this.forEach(prop, function(a,b,c,d){
-                    e[b] = eval(c[b]);
+                    var v = qTxt.test(c[b]) ? eval(c[b]) : c[b];
+                    e[b] = v;
                 });
             }
         },
@@ -602,7 +605,7 @@
         },
         dataget : function(e, args){ // get dataset properties
             this.forEach(args, function(a,b,c,d){
-                c[b] = e.dataset[b];
+                c[b] = e.dataset[b] ? e.dataset[b] : "";
             });
         }
     });
@@ -699,7 +702,7 @@
         { fun: 'nxt', symbol: '>', symPara: 'MONO', symType: 'context' },                   // next
         { fun: 'prev', symbol: '<', symPara: 'MONO', symType: 'context' },                  // previous
         { fun: 'parent', symbol: '^', symPara: 'MONO', symType: 'context' },                // parent
-        { fun: 'cloParent', symbol: '^^', symPara: 'MULTI', symType: 'context' },            // finding closest parent
+        { fun: 'cloParent', symbol: '^^', symPara: 'MULTI', symType: 'context' },           // finding closest parent
         { fun: 'after', symbol: '>|', symPara: 'MULTI', symType: 'opt' },                   // after
         { fun: 'before', symbol: '|<', symPara: 'MULTI', symType: 'opt' },                  // before
         { fun: 'find', symbol: '?', symPara: 'MULTI', symType: 'context' },                 // find
@@ -773,8 +776,10 @@
                 e.appendChild(newEle);
             }else{
                 if(newEle instanceof NodeList){
-                    e.appendChild(newEle[0]);
-                    newEle[0] ? newEle[0].nodeType ? this.apnd(e, newEle) : true : true;
+                    if(newEle.length){
+                        e.appendChild(newEle[0]);
+                        newEle[0] ? newEle[0].nodeType ? this.apnd(e, newEle) : true : true;
+                    }
                 }else{
                     for(var el=0; el < newEle.length; el++){
                         e.appendChild(newEle[el])
@@ -783,8 +788,18 @@
             }
         },
         prnd: function (e, newEle) {
-            e.parentNode.insertBefore(newEle[0], e);
-            newEle[0] ? newEle[0].nodeType ? this.prnd(e, newEle) : true : true;
+            if(newEle.nodeType){
+                e.parentNode.insertBefore(newEle, e);
+            }else{
+                if(newEle instanceof NodeList){
+                    e.parentNode.insertBefore(newEle[0], e);
+                    newEle ? newEle.nodeType ? this.prnd(e, newEle) : true : true;
+                }else{
+                    for(var el=0; el < newEle.length; el++){
+                        e.parentNode.insertBefore(newEle, e);
+                    }
+                }
+            }
         },
         setAttr: function (e, attr) {
             this.forEach(attr, function(a,b,c){
