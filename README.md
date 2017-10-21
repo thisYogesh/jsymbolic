@@ -14,24 +14,24 @@ Hi all,
   > As the name suggested **jSymbolic** it comes with some 
   > intresting symbols insted of function name are as like below.
   ```
-  > ● Document Load Event       :)
-  > ● Next Sibling              >
-  > ● Previous Sibling          <
-  > ● Parent Element            ^
-  > ● Find in DOM               ?
-  > ● Remove Element            x     and so on many symbols....
-  
+  ● Document Load Event       :)
+  ● Next Sibling              >
+  ● Previous Sibling          <
+  ● Parent Element            ^
+  ● Find in DOM               ?
+  ● Remove Element            x     and so on many symbols....
+  ```
 ## How To Use symbols?
 
   > Here we go!
   ```
-  > ● :)      $S(document, ':)', function(){}); // :) DOM Loaded!
-  > ● >       $S('selector', '>') // this will return next element.
-  > ● <       $S('selector', '<') // this will return previous element.
-  > ● ^       $S('selector', '^') // this will return parent of element.
-  > ● ?       $S('selector', '?{span}') // this will find span element in given selector.
-  > ● x       $S('selector', 'x') // this will remove element.
-  
+  ● :)      $S(document, ':)', function(){}); // :) DOM Loaded!
+  ● >       $S('selector', '>') // this will return next element.
+  ● <       $S('selector', '<') // this will return previous element.
+  ● ^       $S('selector', '^') // this will return parent of element.
+  ● ?       $S('selector', '?{span}') // this will find span element in given selector.
+  ● x       $S('selector', 'x') // this will remove element.
+  ```
   > Hope you enjoying the symbols.  ;-),  lets use these all symbols together
   
 ## Chaining in jSymbolic
@@ -46,15 +46,16 @@ Hi all,
   > after loading document from main selector jSymbolic goto next element then preveious element
   > then goto parant element then find span within it and finally remove all span elements.
   ```
-  > we can also write as below 
+  we can also write as below 
   ```
   > ● $S('selector','>')._('<.^')._('?{span}')._('x');
-  
+  ```
 ## How to save object in variable and use them
-  >
+
 ```
   > var obj = $S('selector'); // you saving jSymbolic Object into obj variable
   > var val = obj._('%') // here you can apply symbols on saved object like this
+```
 
 ## Event Handeling
   >
@@ -64,16 +65,18 @@ Hi all,
   >   alert('click fired!');
   > });
 ```
-  **Event Unbinding** (*-=*)
-  ```
-  > $S('selector','-={click}');
 
+**Event Unbinding** (*-=*)
+```
+  > $S('selector','-={click}');
+```
+  
 ## HTML5 Dataset (*#*)
   >
 ```
   > $S('selector','#{id=E0}') // setting id in dataset
   > var id = $S('selector','#{id}') // getting id from dataset
-  
+```  
 ## Attribute Manipulation (*@*)
   >
 ```
@@ -81,7 +84,7 @@ Hi all,
   > $S('selector','@{name=city,id=city01}') // setting multiple attribute to element
   > $S('selector','@{name}') // getting name attribute of element
   > $S('selector','@{name,id}') // getting multiple attribute of element
-  
+```
 ## CSS Manipulation (*&*)
   >
 ```
@@ -89,7 +92,7 @@ Hi all,
   > $S('selector','&{float:left;display:block}') // setting multiple style property to element
   > $S('selector','&{margin-left}') // getting margin left style property of element
   > $S('selector','&{float;display}') // getting multiple style property of element
-
+```
 ## Create Plugins (*=>*)
   > you can also define a new symbols
 ```
@@ -110,6 +113,7 @@ Hi all,
   >   $S(this,'>+{I Love jSymbolic}'); // here '>+' symbol is used for to append functionality
   > });
   > $S('selector','♥') // after you execute this, you will get to see appended text in your targeted selector
+```
 
 ## AJAX (*>X<*)
   >
@@ -121,6 +125,7 @@ Hi all,
   >     console.log(resp)
   >   }
   > });
+```
 
 ## How jSymbolic return result
   >
